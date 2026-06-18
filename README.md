@@ -2,18 +2,59 @@
 
 Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and LogBERT-style scoring.
 
-Проект посвящён поиску аномалий в логах распределённой файловой системы HDFS. Основная задача - определить, является ли `block_id` нормальным или аномальным по последовательности событий, связанных с этим блоком.
+Проект посвящён поиску аномалий в логах распределённой файловой системы HDFS. Цель - построить и сравнить несколько подходов, которые по событиям внутри `block_id` определяют, является ли блок нормальным или аномальным.
 
-Данные основаны на HDFS logs из LogHub. Логи предварительно распарсены в `EventId` / `EventTemplate`, а ключевой объект анализа - `block_id`.
+Основной акцент сделан на sequence-based постановке: на инференсе события считаются поступающими последовательно, поэтому модель не должна полагаться только на признаки всего блока целиком. Табличные модели используются как baseline и sanity check, а LSTM-модели - как более близкий к production-like сценарию подход.
+
+## Что сделано
+
+- EDA предобработанных HDFS logs.
+- Табличные baseline-модели: Logistic Regression, Isolation Forest, Random Forest.
+- Drain3: парсинг raw HDFS logs в event templates.
+- One-step LSTM: предсказание следующего события после окна.
+- Many-to-many LSTM: предсказание следующего события для каждой позиции внутри окна.
+- Сравнение anomaly scoring strategies: `topk_last`, `topk_all`, `topk_last3`, `nll_mean`, `nll_p95`, `nll_max`.
+- Эксперименты с архитектурой LSTM.
+- Подготовлена структура для расширения в сторону LogBERT-style scoring.
+
+## Стек
+
+- Python, NumPy, pandas;
+- scikit-learn для табличных baseline;
+- PyTorch для LSTM-моделей;
+- Drain3 для парсинга raw HDFS logs в event templates;
+- Matplotlib / seaborn для визуализации;
+- Jupyter notebooks для EDA и анализа результатов;
+- YAML-конфиги для воспроизводимых запусков.
 
 ## Идея проекта
 
-В проекте сравниваются два типа подходов:
+Логи представлены через `EventId` / `EventTemplate`, а ключевой объект анализа - `block_id`.
+
+В проекте сравниваются два типа моделей:
 
 - Табличные baseline-модели, которые видят весь блок целиком.
 - Последовательные LSTM-модели, которые работают с окнами событий и ближе к production-like сценарию, где события приходят последовательно.
 
-Табличные модели нужны как sanity check: они показывают, что в данных есть сильный сигнал. Но основной фокус проекта - sequence-модели и способы агрегировать их предсказания в anomaly score на уровне блока.
+Табличные модели показывают, что в данных есть сильный сигнал, но они используют полную информацию о блоке сразу. Основной фокус проекта - sequence-модели и способы агрегировать их предсказания в anomaly score на уровне блока.
+
+Общий pipeline:
+
+```text
+raw/preprocessed HDFS logs
+        ↓
+event sequences per block_id
+        ↓
+sliding windows
+        ↓
+next-event prediction model
+        ↓
+window-level surprise / miss score
+        ↓
+block-level anomaly score
+        ↓
+threshold selected on validation by max F1
+```
 
 ## Структура
 
@@ -43,7 +84,23 @@ src/hdfs_anomaly/
 
 ## Данные
 
-Данные не входят в репозиторий. Ожидаемая локальная структура описана в [data/README.md](data/README.md).
+Используется набор `HDFS_v1` из [LogPai LogHub](https://github.com/logpai/loghub). Данные не входят в репозиторий; ожидаемая локальная структура описана в [data/README.md](data/README.md).
+
+`HDFS_v1` содержит системные логи Hadoop Distributed File System. В этом датасете события группируются по `block_id`, а разметка задаётся на уровне блока: каждый блок считается нормальным или аномальным. В проекте используются как raw logs для повторного парсинга через Drain3, так и предобработанные файлы с `EventId`, `EventTemplate` и block-level labels.
+
+Краткая статистика используемой версии данных:
+
+| Характеристика | Значение |
+|---|---:|
+| Raw log lines | 11,175,629 |
+| Block-level samples | 575,061 |
+| Normal blocks | 558,223 |
+| Anomaly blocks | 16,838 |
+| Anomaly ratio | 2.93% |
+| Event templates | 29 |
+| Median sequence length | 19 events |
+| Mean sequence length | 19.43 events |
+| Max sequence length | 298 events |
 
 Основные файлы:
 
@@ -202,3 +259,20 @@ nll_max   # самый неожиданный переход в блоке
 Ключевой итог проекта: many-to-many LSTM с `nll_max` scoring даёт сильный sequence-based результат и существенно снижает FPR относительно one-step baseline.
 
 Подробнее про структуру результатов см. [reports/README.md](reports/README.md).
+
+## References
+
+- **LogHub / HDFS dataset**: He et al., *LogHub: A Large Collection of System Log Datasets for AI-driven Log Analytics*.  
+  https://github.com/logpai/loghub
+
+- **DeepLog**: Du et al., *DeepLog: Anomaly Detection and Diagnosis from System Logs through Deep Learning*, CCS 2017.  
+  https://dl.acm.org/doi/10.1145/3133956.3134015
+
+- **LogBERT**: Guo et al., *LogBERT: Log Anomaly Detection via BERT*, 2021.  
+  https://arxiv.org/abs/2103.04475
+
+- **LogGPT**: Han et al., *LogGPT: Log Anomaly Detection via GPT*, 2023.  
+  https://arxiv.org/abs/2309.14482
+
+- **Critical evaluation of DL log anomaly detection**: Le and Zhang, *Log-based Anomaly Detection with Deep Learning: How Far Are We?*, 2022.  
+  https://arxiv.org/abs/2202.04301
