@@ -1,0 +1,4 @@
+model,strategy,threshold,validation_best_f1
+logistic_regression,max_f1,0.9535349071083185,0.9893264630106736
+isolation_forest,max_f1,0.5596039249089513,0.3306158284209206
+random_forest,max_f1,0.3966666666666666,0.9977769544275659

@@ -1,0 +1,11 @@
+EventId,FrequencyInAnomalies,EventTemplate
+E5,0.15939288811795316,[*]Receiving block[*]src:[*]dest:[*]
+E26,0.1396565481352992,[*]BLOCK* NameSystem[*]addStoredBlock: blockMap updated:[*]is added to[*]size[*]
+E21,0.1230633130962706,[*]Deleting block[*]file[*]
+E11,0.11104943625325238,[*]PacketResponder[*]for block[*]terminating[*]
+E23,0.11074761491760625,[*]BLOCK* NameSystem[*]delete:[*]is added to invalidSet of[*]
+E9,0.11047701647875108,[*]Received block[*]of size[*]from[*]
+E22,0.05841457068516912,[*]BLOCK* NameSystem[*]allocateBlock:[*]
+E3,0.041082393755420644,[*]Served block[*]to[*]
+E4,0.02865221162185603,[*]Got exception while serving[*]to[*]
+E20,0.018466608846487424,[*]Unexpected error trying to delete block[*]BlockInfo not found in volumeMap[*]

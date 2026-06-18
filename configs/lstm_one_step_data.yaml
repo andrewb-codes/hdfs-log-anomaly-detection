@@ -1,0 +1,29 @@
+data:
+  log_path: data/HDFS.log
+  label_path: data/preprocessed/anomaly_label.csv
+
+drain:
+  config_path: configs/drain3.ini
+  state_path: artifacts/drain/one_step_drain3_state.bin
+  reset_state: true
+
+output:
+  dir: artifacts/lstm/one_step
+
+split:
+  train_norm_ratio: 0.80
+  val_norm_ratio: 0.10
+  val_anom_ratio: 0.30
+  seed: 42
+
+window:
+  target_mode: one_step
+  size: 10
+  stride: 1
+  min_sequence_len: 2
+
+parsing:
+  block_id_regex: "(blk_[A-Za-z0-9_-]+)"
+  timestamp_format: "%y%m%d %H%M%S"
+  drop_unknown_block: true
+  max_lines:

@@ -1,0 +1,7 @@
+model,strategy,threshold_strategy,threshold,validation_best_f1
+lstm_many_to_many_topk_last,topk_last,max_f1,0.1034482758620689,0.5349567949725059
+lstm_many_to_many_topk_all,topk_all,max_f1,0.0909090926024046,0.5176921736099007
+lstm_many_to_many_topk_last3,topk_last3,max_f1,0.0784313748864566,0.51517805020432
+lstm_many_to_many_nll_mean,nll_mean,max_f1,1.044343501329422,0.512409927942354
+lstm_many_to_many_nll_p95,nll_p95,max_f1,5.518307733535764,0.5300579189135212
+lstm_many_to_many_nll_max,nll_max,max_f1,8.425661087036133,0.86973815048061

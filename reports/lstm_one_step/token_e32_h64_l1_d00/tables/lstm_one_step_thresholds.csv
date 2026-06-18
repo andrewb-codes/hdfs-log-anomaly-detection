@@ -1,0 +1,2 @@
+model,strategy,threshold,validation_best_f1
+lstm_one_step,max_f1,0.0869565217391304,0.6069807037457434

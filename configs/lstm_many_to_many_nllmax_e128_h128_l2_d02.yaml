@@ -1,0 +1,30 @@
+run_name: token_nllmax_e128_h128_l2_d02
+dataset_path: artifacts/lstm/many_to_many/dataset.npz
+reports_dir: reports/lstm_many_to_many
+artifacts_dir: artifacts/lstm/many_to_many
+save_model: true
+
+model:
+  embedding_dim: 128
+  hidden_size: 128
+  num_layers: 2
+  dropout: 0.2
+
+training:
+  batch_size: 256
+  epochs: 5
+  lr: 0.001
+  weight_decay: 0.0
+  seed: 42
+  device: auto
+
+early_stopping:
+  enabled: true
+  patience: 2
+  min_delta: 0.0
+
+scoring:
+  strategies:
+    - nll_max
+  top_k: 3
+  thresholding: max_f1

@@ -1,0 +1,13 @@
+EventId,EventTemplate
+E1,[*]Adding an already existing block[*]
+E10,[*]PacketResponder[*]Exception[*]
+E12,[*]:Exception writing block[*]to mirror[*]
+E13,[*]Receiving empty packet for block[*]
+E14,[*]Exception in receiveBlock for block[*]
+E15,[*]Changing block file offset of block[*]from[*]to[*]meta file offset to[*]
+E17,[*]:Failed to transfer[*]to[*]got[*]
+E19,[*]Reopen Block[*]
+E24,[*]BLOCK* Removing block[*]from neededReplications as it does not belong to any file[*]
+E29,[*]PendingReplicationMonitor timed out block[*]
+E7,[*]writeBlock[*]received exception[*]
+E8,[*]PacketResponder[*]for block[*]Interrupted[*]

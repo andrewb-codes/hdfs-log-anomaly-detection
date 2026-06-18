@@ -1,0 +1,11 @@
+EventId,FrequencyInNormal,EventTemplate
+E26,0.15425980853610405,[*]BLOCK* NameSystem[*]addStoredBlock: blockMap updated:[*]is added to[*]size[*]
+E5,0.1540579233991946,[*]Receiving block[*]src:[*]dest:[*]
+E9,0.15381746148453176,[*]Received block[*]of size[*]from[*]
+E11,0.15381746148453176,[*]PacketResponder[*]for block[*]terminating[*]
+E21,0.12551909876564415,[*]Deleting block[*]file[*]
+E23,0.12530573244487953,[*]BLOCK* NameSystem[*]delete:[*]is added to invalidSet of[*]
+E22,0.05127248716151059,[*]BLOCK* NameSystem[*]allocateBlock:[*]
+E3,0.03829057480225498,[*]Served block[*]to[*]
+E4,0.031958839680330774,[*]Got exception while serving[*]to[*]
+E2,0.010737846087658012,[*]Verification succeeded for[*]

@@ -1,0 +1,10 @@
+pandas
+numpy
+scikit-learn
+matplotlib
+jupyter
+joblib
+PyYAML
+ipython
+drain3
+torch

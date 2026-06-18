@@ -1,0 +1,11 @@
+EventId,FrequencyInAnomalies,EventTemplate
+E20,0.018446218263960628,[*]Unexpected error trying to delete block[*]BlockInfo not found in volumeMap[*]
+E6,0.01530169411520696,[*]Received block[*]src:[*]dest:[*]of size[*]
+E18,0.015235637550203605,[*]Starting thread to transfer block[*]to[*]
+E25,0.015235637550203605,[*]BLOCK* ask[*]to replicate[*]to[*]
+E16,0.015013699911383033,[*]:Transmitted block[*]to[*]
+E7,0.011850823937554206,[*]writeBlock[*]received exception[*]
+E22,0.007142083523658534,[*]BLOCK* NameSystem[*]allocateBlock:[*]
+E5,0.00533496471875855,[*]Receiving block[*]src:[*]dest:[*]
+E13,0.0050789245446660886,[*]Receiving empty packet for block[*]
+E28,0.004425610729159963,[*]BLOCK* NameSystem[*]addStoredBlock: addStoredBlock request received for[*]on[*]size[*]But it does not belong to any file[*]

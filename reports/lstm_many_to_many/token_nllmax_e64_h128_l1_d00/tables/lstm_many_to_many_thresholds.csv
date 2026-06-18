@@ -1,0 +1,2 @@
+model,strategy,threshold_strategy,threshold,validation_best_f1
+lstm_many_to_many_nll_max,nll_max,max_f1,8.67854118347168,0.8909921671018277
