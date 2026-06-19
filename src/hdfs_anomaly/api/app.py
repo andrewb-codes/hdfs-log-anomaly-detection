@@ -22,7 +22,7 @@ resources: InferenceResources | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Load inference resources on application startup."""
     global resources
     resources = load_resources()
@@ -66,10 +66,13 @@ def health() -> dict:
     }
 
 
-@app.get("/model-info", response_model=ModelInfoResponse)
+@app.get(
+    "/model-info",
+    response_model=ModelInfoResponse,
+    dependencies=[Depends(require_admin)],
+)
 def model_info(
-        inference_resources: InferenceResources = Depends(get_resources),
-        admin: dict = Depends(require_admin)
+        inference_resources: InferenceResources = Depends(get_resources)
 ) -> ModelInfoResponse:
     """Return metadata for the currently loaded inference model."""
     return ModelInfoResponse(
@@ -121,29 +124,32 @@ def forward(
     return response
 
 
-@app.get("/history", response_model=list[HistoryItem])
-def history(
-        db: Session = Depends(get_db),
-        admin: dict = Depends(require_admin)
-) -> list[HistoryItem]:
+@app.get(
+    "/history",
+    response_model=list[HistoryItem],
+    dependencies=[Depends(require_admin)],
+)
+def history(db: Session = Depends(get_db)) -> list[HistoryItem]:
     """Return stored forward request history."""
     return list_history(db)
 
 
-@app.delete("/history", response_model=DeleteHistoryResponse)
-def delete_history(
-        db: Session = Depends(get_db),
-        admin: dict = Depends(require_admin)
-) -> DeleteHistoryResponse:
+@app.delete(
+    "/history",
+    response_model=DeleteHistoryResponse,
+    dependencies=[Depends(require_admin)],
+)
+def delete_history(db: Session = Depends(get_db)) -> DeleteHistoryResponse:
     """Delete stored request history."""
     deleted = clear_history(db)
     return DeleteHistoryResponse(deleted=deleted)
 
 
-@app.get("/stats", response_model=StatsResponse)
-def stats(
-        db: Session = Depends(get_db),
-        admin: dict = Depends(require_admin)
-) -> StatsResponse:
+@app.get(
+    "/stats",
+    response_model=StatsResponse,
+    dependencies=[Depends(require_admin)],
+)
+def stats(db: Session = Depends(get_db)) -> StatsResponse:
     """Return aggregate request processing statistics."""
     return StatsResponse(**request_stats(db))
