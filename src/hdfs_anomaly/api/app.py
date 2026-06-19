@@ -1,9 +1,10 @@
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
+from hdfs_anomaly.api.auth import authenticate_admin, create_access_token, require_admin
 from hdfs_anomaly.api.database import SessionLocal, init_db
 from hdfs_anomaly.api.history import clear_history, list_history, request_stats, save_history_item
 from hdfs_anomaly.api.inference import run_inference
@@ -14,10 +15,8 @@ from hdfs_anomaly.api.schemas import (
     ModelInfoResponse,
     HistoryItem,
     StatsResponse,
-    DeleteHistoryResponse
+    DeleteHistoryResponse, TokenResponse, TokenRequest
 )
-
-DELETE_HISTORY_TOKEN = "delete-history-token"
 
 resources: InferenceResources | None = None
 
@@ -50,6 +49,15 @@ def get_resources() -> InferenceResources:
     return resources
 
 
+@app.post("/auth/token", response_model=TokenResponse)
+def login(request: TokenRequest) -> TokenResponse:
+    if not authenticate_admin(request.username, request.password):
+        raise HTTPException(status_code=401, detail="invalid credentials")
+
+    token = create_access_token(subject=request.username, role="admin")
+    return TokenResponse(access_token=token)
+
+
 @app.get("/health")
 def health() -> dict:
     """Return service health and model loading status."""
@@ -60,7 +68,10 @@ def health() -> dict:
 
 
 @app.get("/model-info", response_model=ModelInfoResponse)
-def model_info(inference_resources: InferenceResources = Depends(get_resources)) -> ModelInfoResponse:
+def model_info(
+        inference_resources: InferenceResources = Depends(get_resources),
+        admin: dict = Depends(require_admin)
+) -> ModelInfoResponse:
     """Return metadata for the currently loaded inference model."""
     return ModelInfoResponse(
         model_type="many_to_many_lstm",
@@ -112,25 +123,28 @@ def forward(
 
 
 @app.get("/history", response_model=list[HistoryItem])
-def history(db: Session = Depends(get_db)) -> list[HistoryItem]:
+def history(
+        db: Session = Depends(get_db),
+        admin: dict = Depends(require_admin)
+) -> list[HistoryItem]:
     """Return stored forward request history."""
     return list_history(db)
 
 
 @app.delete("/history", response_model=DeleteHistoryResponse)
 def delete_history(
-        x_delete_token: str | None = Header(default=None),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        admin: dict = Depends(require_admin)
 ) -> DeleteHistoryResponse:
-    """Delete stored request history when the confirmation token is valid."""
-    if x_delete_token != DELETE_HISTORY_TOKEN:
-        raise HTTPException(status_code=403, detail="invalid delete token")
-
+    """Delete stored request history."""
     deleted = clear_history(db)
     return DeleteHistoryResponse(deleted=deleted)
 
 
 @app.get("/stats", response_model=StatsResponse)
-def stats(db: Session = Depends(get_db)) -> StatsResponse:
+def stats(
+        db: Session = Depends(get_db),
+        admin: dict = Depends(require_admin)
+) -> StatsResponse:
     """Return aggregate request processing statistics."""
     return StatsResponse(**request_stats(db))

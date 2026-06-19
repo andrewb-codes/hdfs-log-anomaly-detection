@@ -13,3 +13,5 @@ fastapi
 uvicorn
 pydantic
 sqlalchemy
+
+python-jose[cryptography]

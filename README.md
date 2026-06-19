@@ -225,16 +225,42 @@ python scripts/evaluate_lstm_many_to_many.py --config configs/lstm_many_to_many_
 PYTHONPATH=src uvicorn hdfs_anomaly.api.app:app --reload
 ```
 
+Для локального запуска JWT-авторизация использует dev-defaults:
+
+```text
+API_SECRET_KEY=dev-secret-key
+API_ADMIN_USERNAME=admin
+API_ADMIN_PASSWORD=admin
+API_ACCESS_TOKEN_EXPIRE_MINUTES=60
+```
+
+В реальном окружении эти значения нужно переопределить через environment variables.
+
 Основные endpoints:
 
 | Method | Route | Назначение |
 |---|---|---|
 | `GET` | `/health` | Проверка состояния сервиса и загрузки модели |
+| `POST` | `/auth/token` | Получение JWT для admin endpoints |
 | `GET` | `/model-info` | Информация о загруженной модели, threshold и scoring |
 | `POST` | `/forward` | Inference по raw HDFS log lines |
 | `GET` | `/history` | История успешных и неуспешных model calls |
-| `DELETE` | `/history` | Очистка истории при наличии header-токена |
+| `DELETE` | `/history` | Очистка истории |
 | `GET` | `/stats` | Статистика запросов и времени обработки |
+
+`/forward` и `/health` доступны без авторизации. `/model-info`, `/history`, `DELETE /history` и `/stats` требуют JWT в header:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+Получение токена:
+
+```bash
+curl -X POST http://127.0.0.1:8000/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin"}'
+```
 
 Формат запроса `/forward`:
 
@@ -275,7 +301,7 @@ curl -X POST http://127.0.0.1:8000/forward \
 
 ```bash
 curl -X DELETE http://127.0.0.1:8000/history \
-  -H "x-delete-token: delete-history-token"
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ## Scoring

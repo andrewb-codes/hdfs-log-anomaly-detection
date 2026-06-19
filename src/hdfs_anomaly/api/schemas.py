@@ -69,3 +69,13 @@ class ModelInfoResponse(BaseModel):
     window_size: int
     stride: int
     device: str
+
+
+class TokenRequest(BaseModel):
+    username: str
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
