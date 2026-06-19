@@ -6,6 +6,18 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a Fas
 
 Основной акцент сделан на sequence-based постановке: на инференсе события считаются поступающими последовательно, поэтому модель не должна полагаться только на признаки всего блока целиком. Табличные модели используются как baseline и sanity check, а LSTM-модели - как более близкий к production-like сценарию подход.
 
+## Ключевой результат
+
+Лучший sequence-based подход - many-to-many LSTM с `nll_max` scoring:
+
+| F1 | Precision | Recall | FPR | Average Precision |
+|---:|---:|---:|---:|---:|
+| 0.911 | 0.966 | 0.863 | 0.0041 | 0.975 |
+
+Главный вывод: для HDFS logs сильнее всего работает не средняя ошибка по блоку, а самый неожиданный переход внутри последовательности. Это соответствует интуиции задачи: аномальный `block_id` часто отличается одним или несколькими резкими нарушениями нормального порядка событий.
+
+Репозиторий демонстрирует полный ML workflow: EDA, feature engineering, baseline-модели, sequence-модели, подбор anomaly scoring, воспроизводимые YAML-конфиги, сохранение reports/artifacts и FastAPI-сервис для inference по raw log lines.
+
 ## Что сделано
 
 - EDA предобработанных HDFS logs.
