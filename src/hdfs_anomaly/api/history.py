@@ -15,7 +15,7 @@ def utc_now() -> datetime:
 class RequestHistory(Base):
     __tablename__ = "request_history"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
     block_id: Mapped[str | None] = mapped_column(String, nullable=True)

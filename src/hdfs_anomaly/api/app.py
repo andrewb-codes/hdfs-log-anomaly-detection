@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from hdfs_anomaly.api.auth import authenticate_admin, create_access_token, require_admin
-from hdfs_anomaly.api.database import SessionLocal, init_db
+from hdfs_anomaly.api.database import SessionLocal
 from hdfs_anomaly.api.history import clear_history, list_history, request_stats, save_history_item
 from hdfs_anomaly.api.inference import run_inference
 from hdfs_anomaly.api.resources import InferenceResources, load_resources
@@ -23,9 +23,8 @@ resources: InferenceResources | None = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize database tables and inference resources on application startup."""
+    """Load inference resources on application startup."""
     global resources
-    init_db()
     resources = load_resources()
     yield
 
