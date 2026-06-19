@@ -1,6 +1,6 @@
 # hdfs-log-anomaly-detection
 
-Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and LogBERT-style scoring.
+Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a FastAPI inference service.
 
 Проект посвящён поиску аномалий в логах распределённой файловой системы HDFS. Цель - построить и сравнить несколько подходов, которые по событиям внутри `block_id` определяют, является ли блок нормальным или аномальным.
 
@@ -15,7 +15,7 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and LogBE
 - Many-to-many LSTM: предсказание следующего события для каждой позиции внутри окна.
 - Сравнение anomaly scoring strategies: `topk_last`, `topk_all`, `topk_last3`, `nll_mean`, `nll_p95`, `nll_max`.
 - Эксперименты с архитектурой LSTM.
-- Подготовлена структура для расширения в сторону LogBERT-style scoring.
+- FastAPI-сервис для inference по raw HDFS log lines с сохранением истории запросов в SQLite.
 
 ## Стек
 
@@ -23,6 +23,7 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and LogBE
 - scikit-learn для табличных baseline;
 - PyTorch для LSTM-моделей;
 - Drain3 для парсинга raw HDFS logs в event templates;
+- FastAPI, SQLAlchemy, SQLite для ML-сервиса;
 - Matplotlib / seaborn для визуализации;
 - Jupyter notebooks для EDA и анализа результатов;
 - YAML-конфиги для воспроизводимых запусков.
@@ -79,6 +80,7 @@ src/hdfs_anomaly/
 ├── models/      # tabular, one-step LSTM, many-to-many LSTM
 ├── parsing/     # Drain parser для raw HDFS logs
 ├── sequences/   # split, windowing, сохранение LSTM datasets
+├── api/         # FastAPI inference service
 └── utils/       # служебные функции для экспериментов
 ```
 
@@ -203,6 +205,77 @@ python scripts/evaluate_lstm_many_to_many.py --config configs/lstm_many_to_many.
 ```bash
 python scripts/train_lstm_many_to_many.py --config configs/lstm_many_to_many_nllmax_e64_h128_l1_d00.yaml
 python scripts/evaluate_lstm_many_to_many.py --config configs/lstm_many_to_many_nllmax_e64_h128_l1_d00.yaml
+```
+
+## FastAPI inference service
+
+В проект добавлен ML-сервис, который выполняет inference обученной many-to-many LSTM по сырым строкам HDFS logs.
+
+Сервис использует:
+
+- checkpoint модели: `artifacts/lstm/many_to_many/<run_name>/model.pt`;
+- сохранённый Drain transformer: `artifacts/lstm/many_to_many/drain_event_sequence_transformer.joblib`;
+- threshold, подобранный на validation: `reports/lstm_many_to_many/<run_name>/tables/lstm_many_to_many_thresholds.csv`;
+- настройки из [configs/api.yaml](configs/api.yaml);
+- SQLite-историю запросов: `artifacts/api/history.sqlite3`.
+
+Запуск:
+
+```bash
+PYTHONPATH=src uvicorn hdfs_anomaly.api.app:app --reload
+```
+
+Основные endpoints:
+
+| Method | Route | Назначение |
+|---|---|---|
+| `GET` | `/health` | Проверка состояния сервиса и загрузки модели |
+| `GET` | `/model-info` | Информация о загруженной модели, threshold и scoring |
+| `POST` | `/forward` | Inference по raw HDFS log lines |
+| `GET` | `/history` | История успешных и неуспешных model calls |
+| `DELETE` | `/history` | Очистка истории при наличии header-токена |
+| `GET` | `/stats` | Статистика запросов и времени обработки |
+
+Формат запроса `/forward`:
+
+```bash
+curl -X POST http://127.0.0.1:8000/forward \
+  -H "Content-Type: application/json" \
+  -d '{
+    "block_id": "blk_7503483334202473044",
+    "log_lines": [
+      "081109 203615 148 INFO dfs.DataNode$DataXceiver: Receiving block blk_7503483334202473044 src: /10.0.0.1:1 dest: /10.0.0.2:2",
+      "..."
+    ],
+    "return_event_ids": true,
+    "return_window_scores": true
+  }'
+```
+
+Для many-to-many LSTM нужно больше `window_size` событий в одном блоке, иначе сервис вернёт ошибку inference. Для проверки удобно отправлять несколько десятков реальных строк одного `block_id` из `data/HDFS.log`.
+
+Пример успешного ответа:
+
+```json
+{
+  "block_id": "blk_7503483334202473044",
+  "score": 4.8507,
+  "threshold": 8.6785,
+  "is_anomaly": false,
+  "scoring_strategy": "nll_max",
+  "num_log_lines": 22,
+  "num_events": 22,
+  "num_windows": 12,
+  "event_ids": [0, 0, 1, 0, 2],
+  "window_scores": [1.1899, 1.3688, 1.1948]
+}
+```
+
+Очистка истории:
+
+```bash
+curl -X DELETE http://127.0.0.1:8000/history \
+  -H "x-delete-token: delete-history-token"
 ```
 
 ## Scoring

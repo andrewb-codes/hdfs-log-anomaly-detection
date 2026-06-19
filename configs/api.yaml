@@ -1,0 +1,17 @@
+model:
+  type: many_to_many_lstm
+  checkpoint_path: artifacts/lstm/many_to_many/token_nllmax_e64_h128_l1_d00/model.pt
+
+threshold:
+  path: reports/lstm_many_to_many/token_nllmax_e64_h128_l1_d00/tables/lstm_many_to_many_thresholds.csv
+  strategy: nll_max
+
+transformer:
+  path: artifacts/lstm/many_to_many/drain_event_sequence_transformer.joblib
+
+sequence:
+  window_size: 10
+  stride: 1
+
+scoring:
+  strategy: nll_max

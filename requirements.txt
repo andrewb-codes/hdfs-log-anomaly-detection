@@ -8,3 +8,8 @@ PyYAML
 ipython
 drain3
 torch
+
+fastapi
+uvicorn
+pydantic
+sqlalchemy
