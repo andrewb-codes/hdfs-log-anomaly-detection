@@ -23,7 +23,8 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a Fas
 - scikit-learn для табличных baseline;
 - PyTorch для LSTM-моделей;
 - Drain3 для парсинга raw HDFS logs в event templates;
-- FastAPI, SQLAlchemy, SQLite для ML-сервиса;
+- FastAPI, SQLAlchemy, SQLite, Alembic для ML-сервиса;
+- Docker / Docker Compose для контейнерного запуска API;
 - Matplotlib / seaborn для визуализации;
 - Jupyter notebooks для EDA и анализа результатов;
 - YAML-конфиги для воспроизводимых запусков.
@@ -67,6 +68,8 @@ threshold selected on validation by max F1
 ├── notebooks/               # EDA и анализ результатов
 ├── reports/                 # таблицы метрик и графики
 ├── scripts/                 # entrypoint-скрипты обучения/evaluation
+├── Dockerfile               # контейнер API
+├── docker-compose.yml       # запуск API с mounted artifacts/reports/configs
 └── src/hdfs_anomaly/        # основной Python-код проекта
 ```
 
@@ -219,13 +222,30 @@ python scripts/evaluate_lstm_many_to_many.py --config configs/lstm_many_to_many_
 - настройки из [configs/api.yaml](configs/api.yaml);
 - SQLite-историю запросов: `artifacts/api/history.sqlite3`.
 
-Запуск:
+Перед запуском должны быть доступны файлы модели, Drain transformer и таблица threshold, указанные в `configs/api.yaml`.
+
+Локальный запуск:
 
 ```bash
+alembic upgrade head
 PYTHONPATH=src uvicorn hdfs_anomaly.api.app:app --reload
 ```
 
-Для локального запуска JWT-авторизация использует dev-defaults:
+Docker-запуск:
+
+```bash
+docker compose up --build
+```
+
+Docker image содержит код, зависимости, конфиги и Alembic migrations. Данные, модели и reports не вшиваются в image: `docker-compose.yml` монтирует локальные папки `./artifacts`, `./reports` и `./configs` внутрь контейнера. При старте контейнер автоматически выполняет `alembic upgrade head`, а затем запускает `uvicorn`.
+
+Проверка:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+По умолчанию JWT-авторизация использует dev-defaults:
 
 ```text
 API_SECRET_KEY=dev-secret-key
