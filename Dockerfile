@@ -10,8 +10,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-api.txt .
+RUN pip install --no-cache-dir --timeout 120 --retries 5 -r requirements-api.txt
+RUN pip install --no-cache-dir --timeout 120 --retries 5 \
+    --index-url https://download.pytorch.org/whl/cpu \
+    torch==2.12.1
 
 COPY src ./src
 COPY configs ./configs
