@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import joblib
 import pandas as pd
@@ -14,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[3]
 @dataclass
 class InferenceResources:
     model: ManyToManyLSTMModel
-    transformer: object
+    transformer: Any
     threshold: float
     scoring_strategy: str
     window_size: int
@@ -41,10 +42,7 @@ def load_resources(config_path: Path | None = None) -> InferenceResources:
     transformer_path = resolve_project_path(config["transformer"]["path"], ROOT)
 
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
-    model = ManyToManyLSTMModel(
-        vocab_size=checkpoint["vocab_size"],
-        **checkpoint["model_config"]
-    )
+    model = ManyToManyLSTMModel(vocab_size=checkpoint["vocab_size"], **checkpoint["model_config"])
     model.load_state_dict(checkpoint["state_dict"])
     model.eval()
 
@@ -59,5 +57,5 @@ def load_resources(config_path: Path | None = None) -> InferenceResources:
         scoring_strategy=strategy,
         window_size=int(config["sequence"]["window_size"]),
         stride=int(config["sequence"]["stride"]),
-        device="cpu"
+        device="cpu",
     )

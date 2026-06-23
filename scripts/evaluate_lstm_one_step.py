@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 import argparse
-import sys
 from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
 from hdfs_anomaly.metrics.classification import classification_summary, find_threshold_for_max_f1
+from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:

@@ -1,3 +1,5 @@
+from typing import cast
+
 import torch
 from torch import nn
 
@@ -28,4 +30,4 @@ class ManyToManyLSTMModel(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         embedded = self.embedding(x)
         output, _ = self.lstm(embedded)
-        return self.fc(output)
+        return cast(torch.Tensor, self.fc(output))

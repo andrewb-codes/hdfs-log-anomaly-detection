@@ -75,8 +75,11 @@ class DrainEventSequenceTransformer(BaseEstimator, TransformerMixin):
             df = df[df["block_id"].notna()]
 
         df = df.dropna(subset=["timestamp"])
+        if self.event_to_id_ is None:
+            raise RuntimeError("DrainEventSequenceTransformer must be fitted before transform().")
+        event_to_id = self.event_to_id_
         df["event_id"] = df["cluster_id"].apply(
-            lambda cluster_id: self.event_to_id_.get(cluster_id, self.event_to_id_["unknown"])
+            lambda cluster_id: event_to_id.get(cluster_id, event_to_id["unknown"])
         )
         df = df.sort_values(["block_id", "timestamp"])
 

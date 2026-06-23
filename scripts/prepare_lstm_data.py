@@ -1,16 +1,9 @@
 #!/usr/bin/env python
 import argparse
-import sys
 from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
 from hdfs_anomaly.parsing.drain_transformer import DrainEventSequenceTransformer
 from hdfs_anomaly.sequences.io import save_lstm_dataset
 from hdfs_anomaly.sequences.split import (
@@ -19,6 +12,9 @@ from hdfs_anomaly.sequences.split import (
     split_log_lines_by_blocks,
 )
 from hdfs_anomaly.sequences.windows import make_lstm_windows
+from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -124,7 +120,7 @@ def main() -> None:
     reset_drain_state_if_needed(config)
 
     labels_df, split_block_sets, train_lines, val_lines, test_lines = selected_raw_lines(config)
-    label_map = dict(zip(labels_df["block_id"], labels_df["is_anomaly"]))
+    label_map = dict(zip(labels_df["block_id"], labels_df["is_anomaly"], strict=False))
 
     transformer = build_transformer(config)
     train_windows, val_windows, test_windows = prepare_windows(

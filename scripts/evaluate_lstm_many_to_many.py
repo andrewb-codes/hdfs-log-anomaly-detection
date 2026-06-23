@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 import argparse
-import sys
 from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
 from hdfs_anomaly.metrics.classification import classification_summary, find_threshold_for_max_f1
 from hdfs_anomaly.metrics.lstm_many_to_many import MANY_TO_MANY_SCORING_STRATEGIES
+from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,7 +101,9 @@ def save_metrics(
 ) -> None:
     tables_dir = config["tables_dir"]
     tables_dir.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(threshold_rows).to_csv(tables_dir / "lstm_many_to_many_thresholds.csv", index=False)
+    pd.DataFrame(threshold_rows).to_csv(
+        tables_dir / "lstm_many_to_many_thresholds.csv", index=False
+    )
     pd.DataFrame(validation_rows).to_csv(
         tables_dir / "lstm_many_to_many_validation_metrics.csv",
         index=False,
@@ -141,7 +139,9 @@ def main() -> None:
     validation_rows = []
     test_rows = []
     for strategy in strategies:
-        threshold_summary, validation_summary, test_summary = evaluate_one_strategy(strategy, config)
+        threshold_summary, validation_summary, test_summary = evaluate_one_strategy(
+            strategy, config
+        )
         threshold_rows.append(threshold_summary)
         validation_rows.append(validation_summary)
         test_rows.append(test_summary)

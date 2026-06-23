@@ -24,36 +24,24 @@ def parse_log_lines(request: ForwardRequest, resources: InferenceResources) -> l
 
 
 def make_inference_windows(
-        block_id: str,
-        sequence: list[int],
-        window_size: int,
-        stride: int
+    block_id: str, sequence: list[int], window_size: int, stride: int
 ) -> pd.DataFrame:
     """Convert one block event sequence into many-to-many LSTM inference windows."""
-    sequences = pd.DataFrame(
-        [
-            {
-                "block_id": block_id,
-                "sequence": sequence
-            }
-        ]
-    )
+    sequences = pd.DataFrame([{"block_id": block_id, "sequence": sequence}])
     windows = make_lstm_windows(
-        sequences_df=sequences,
-        window_size=window_size,
-        stride=stride,
-        target_mode="many_to_many"
+        sequences_df=sequences, window_size=window_size, stride=stride, target_mode="many_to_many"
     )
 
     if windows.empty:
-        raise RuntimeError(f"not enough events for inference: got {len(sequence)}, need more then {window_size}")
+        raise RuntimeError(
+            f"not enough events for inference: got {len(sequence)}, need more then {window_size}"
+        )
 
     return windows
 
 
 def score_windows(
-        windows: pd.DataFrame,
-        resources: InferenceResources
+    windows: pd.DataFrame, resources: InferenceResources
 ) -> tuple[float, list[float]]:
     """Score inference windows and aggregate them into a block-level anomaly score."""
     x = np.asarray(windows["window"].to_list(), dtype=np.int64)
@@ -82,17 +70,14 @@ def score_windows(
     return block_score, window_scores
 
 
-def run_inference(
-        request: ForwardRequest,
-        resources: InferenceResources
-) -> ForwardResponse:
+def run_inference(request: ForwardRequest, resources: InferenceResources) -> ForwardResponse:
     """Run the full raw-log to block-level anomaly decision pipeline."""
     sequence = parse_log_lines(request, resources)
     windows = make_inference_windows(
         block_id=request.block_id,
         sequence=sequence,
         window_size=resources.window_size,
-        stride=resources.stride
+        stride=resources.stride,
     )
     score, window_scores = score_windows(windows, resources)
     is_anomaly = score >= resources.threshold

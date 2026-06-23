@@ -10,12 +10,14 @@ from hdfs_anomaly.api.history import clear_history, list_history, request_stats,
 from hdfs_anomaly.api.inference import run_inference
 from hdfs_anomaly.api.resources import InferenceResources, load_resources
 from hdfs_anomaly.api.schemas import (
+    DeleteHistoryResponse,
     ForwardRequest,
     ForwardResponse,
-    ModelInfoResponse,
     HistoryItem,
+    ModelInfoResponse,
     StatsResponse,
-    DeleteHistoryResponse, TokenResponse, TokenRequest
+    TokenRequest,
+    TokenResponse,
 )
 
 resources: InferenceResources | None = None
@@ -60,10 +62,7 @@ def login(request: TokenRequest) -> TokenResponse:
 @app.get("/health")
 def health() -> dict:
     """Return service health and model loading status."""
-    return {
-        "status": "ok",
-        "model_loaded": resources is not None
-    }
+    return {"status": "ok", "model_loaded": resources is not None}
 
 
 @app.get(
@@ -72,7 +71,7 @@ def health() -> dict:
     dependencies=[Depends(require_admin)],
 )
 def model_info(
-        inference_resources: InferenceResources = Depends(get_resources)
+    inference_resources: InferenceResources = Depends(get_resources),
 ) -> ModelInfoResponse:
     """Return metadata for the currently loaded inference model."""
     return ModelInfoResponse(
@@ -81,22 +80,22 @@ def model_info(
         threshold=inference_resources.threshold,
         window_size=inference_resources.window_size,
         stride=inference_resources.stride,
-        device=inference_resources.device
+        device=inference_resources.device,
     )
 
 
 @app.post("/forward", response_model=ForwardResponse)
 def forward(
-        request: ForwardRequest,
-        db: Session = Depends(get_db),
-        inference_resources: InferenceResources = Depends(get_resources)
+    request: ForwardRequest,
+    db: Session = Depends(get_db),
+    inference_resources: InferenceResources = Depends(get_resources),
 ) -> ForwardResponse:
     """Run anomaly inference for raw HDFS log lines and store request history."""
     started_at = time.perf_counter()
 
     try:
         response = run_inference(request, inference_resources)
-    except Exception:
+    except Exception as exc:
         processing_ms = (time.perf_counter() - started_at) * 1000
         save_history_item(
             db,
@@ -106,7 +105,7 @@ def forward(
             num_log_lines=len(request.log_lines),
             error_message="model couldn't process data",
         )
-        raise HTTPException(status_code=403, detail="model couldn`t process data")
+        raise HTTPException(status_code=403, detail="model couldn`t process data") from exc
 
     processing_ms = (time.perf_counter() - started_at) * 1000
     save_history_item(
@@ -131,7 +130,7 @@ def forward(
 )
 def history(db: Session = Depends(get_db)) -> list[HistoryItem]:
     """Return stored forward request history."""
-    return list_history(db)
+    return [HistoryItem.model_validate(item) for item in list_history(db)]
 
 
 @app.delete(

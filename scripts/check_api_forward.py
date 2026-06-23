@@ -5,12 +5,13 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Send real HDFS log lines to the FastAPI /forward route.")
+    parser = argparse.ArgumentParser(
+        description="Send real HDFS log lines to the FastAPI /forward route."
+    )
     parser.add_argument(
         "--api-url",
         default="http://127.0.0.1:8000/forward",

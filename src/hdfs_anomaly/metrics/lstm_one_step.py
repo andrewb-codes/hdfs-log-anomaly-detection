@@ -1,4 +1,5 @@
-from typing import Iterable
+from collections.abc import Iterable
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -22,7 +23,7 @@ def predict_next_event_logits(
             xb = torch.as_tensor(x[start : start + batch_size], dtype=torch.long, device=device)
             logits = model(xb)
             logits_batches.append(logits.detach().cpu().numpy())
-    return np.vstack(logits_batches)
+    return cast(np.ndarray, np.vstack(logits_batches))
 
 
 def topk_miss_from_logits(logits: np.ndarray, y: np.ndarray, top_k: int) -> np.ndarray:
@@ -35,7 +36,7 @@ def topk_miss_from_logits(logits: np.ndarray, y: np.ndarray, top_k: int) -> np.n
     k = min(top_k, logits.shape[1])
     topk = np.argpartition(logits, kth=logits.shape[1] - k, axis=1)[:, -k:]
     hit = (topk == y.reshape(-1, 1)).any(axis=1)
-    return (~hit).astype(np.int32)
+    return cast(np.ndarray, (~hit).astype(np.int32))
 
 
 def block_miss_rate_frame(

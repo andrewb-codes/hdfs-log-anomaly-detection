@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 from sqlalchemy import Boolean, DateTime, Float, Integer, String
@@ -9,7 +9,7 @@ from hdfs_anomaly.api.database import Base
 
 def utc_now() -> datetime:
     """Return the current UTC timestamp for history records."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class RequestHistory(Base):
@@ -34,18 +34,18 @@ class RequestHistory(Base):
 
 
 def save_history_item(
-        db: Session,
-        *,
-        block_id: str | None,
-        status_code: int,
-        processing_ms: float,
-        num_log_lines: int | None = None,
-        num_events: int | None = None,
-        num_windows: int | None = None,
-        score: float | None = None,
-        threshold: float | None = None,
-        is_anomaly: bool | None = None,
-        error_message: str | None = None,
+    db: Session,
+    *,
+    block_id: str | None,
+    status_code: int,
+    processing_ms: float,
+    num_log_lines: int | None = None,
+    num_events: int | None = None,
+    num_windows: int | None = None,
+    score: float | None = None,
+    threshold: float | None = None,
+    is_anomaly: bool | None = None,
+    error_message: str | None = None,
 ) -> RequestHistory:
     """Persist one API request outcome in the history table."""
     item = RequestHistory(
@@ -86,17 +86,9 @@ def request_stats(db: Session) -> dict:
     successful_requests = sum(row.status_code == 200 for row in rows)
     failed_requests = total_requests - successful_requests
 
-    processing_times = [
-        row.processing_ms
-        for row in rows
-        if row.processing_ms is not None
-    ]
+    processing_times = [row.processing_ms for row in rows if row.processing_ms is not None]
 
-    num_log_lines = [
-        row.num_log_lines
-        for row in rows
-        if row.num_log_lines is not None
-    ]
+    num_log_lines = [row.num_log_lines for row in rows if row.num_log_lines is not None]
 
     if processing_times:
         processing_array = np.asarray(processing_times, dtype=float)

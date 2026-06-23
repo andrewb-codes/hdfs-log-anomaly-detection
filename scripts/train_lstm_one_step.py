@@ -2,26 +2,23 @@
 import argparse
 import copy
 import json
-import sys
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
 from hdfs_anomaly.metrics.lstm_one_step import (
     block_miss_rate_frame,
     predict_next_event_logits,
     topk_miss_from_logits,
 )
-from hdfs_anomaly.utils.experiment import load_config, resolve_project_path, select_device, set_seed
 from hdfs_anomaly.models.lstm_one_step import OneStepLSTMModel
+from hdfs_anomaly.utils.experiment import load_config, resolve_project_path, select_device, set_seed
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -48,6 +45,7 @@ def build_run_config(args: argparse.Namespace) -> dict:
     config["tables_dir"] = config["run_reports_dir"] / "tables"
     config["run_artifacts_dir"] = config["artifacts_dir"] / run_name
     return config
+
 
 def load_one_step_dataset(dataset_path: Path) -> dict[str, np.ndarray]:
     if not dataset_path.exists():
@@ -126,7 +124,7 @@ def train_model(
     arrays: dict[str, np.ndarray],
     config: dict,
     device: str,
-) -> tuple[dict[str, list[float]], dict[str, torch.Tensor], int, float]:
+) -> tuple[dict[str, list[Any]], dict[str, torch.Tensor], int, float]:
     training_config = config["training"]
     early_stopping_config = config.get("early_stopping", {})
     early_stopping_enabled = early_stopping_config.get("enabled", False)
@@ -145,7 +143,7 @@ def train_model(
         training_config["batch_size"],
     )
 
-    history = {"epoch": [], "train_loss": [], "val_loss": [], "is_best": []}
+    history: dict[str, list[Any]] = {"epoch": [], "train_loss": [], "val_loss": [], "is_best": []}
     best_state_dict = copy.deepcopy(model.state_dict())
     best_epoch = 0
     best_val_loss = float("inf")
@@ -258,7 +256,7 @@ def save_model(
     torch.save(checkpoint, output_path)
 
 
-def save_history(history: dict[str, list[float]], config: dict) -> None:
+def save_history(history: dict[str, Any], config: dict) -> None:
     config["tables_dir"].mkdir(parents=True, exist_ok=True)
     with (config["tables_dir"] / "lstm_one_step_history.json").open("w", encoding="utf-8") as file:
         json.dump(history, file, indent=2)
@@ -290,10 +288,13 @@ def main() -> None:
 
     history, best_state_dict, best_epoch, best_val_loss = train_model(model, arrays, config, device)
     model.load_state_dict(best_state_dict)
-    history["best_epoch"] = best_epoch
-    history["best_val_loss"] = best_val_loss
+    history_output = {
+        **history,
+        "best_epoch": best_epoch,
+        "best_val_loss": best_val_loss,
+    }
 
-    save_history(history, config)
+    save_history(history_output, config)
     save_block_scores(model, arrays, "val", config, device)
     save_block_scores(model, arrays, "test", config, device)
 

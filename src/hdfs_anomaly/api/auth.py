@@ -1,11 +1,11 @@
 import hmac
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-
 
 SECRET_KEY = os.getenv("API_SECRET_KEY", "dev-secret-key")
 ALGORITHM = os.getenv("API_JWT_ALGORITHM", "HS256")
@@ -26,21 +26,21 @@ def authenticate_admin(username: str, password: str) -> bool:
 
 def create_access_token(subject: str, role: str) -> str:
     """Create a signed JWT access token for an authenticated API user."""
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {
-        "sub": subject,
-        "role": role,
-        "exp": expires_at
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    expires_at = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {"sub": subject, "role": role, "exp": expires_at}
+    return cast(str, jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM))
 
 
-def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict:
+def require_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> dict[str, Any]:
     """Validate bearer JWT credentials and require the admin role."""
     try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
-        raise HTTPException(status_code=401, detail="invalid token")
+        payload = cast(
+            dict[str, Any], jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        )
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="invalid token") from exc
 
     if payload.get("role") != "admin":
         raise HTTPException(status_code=403, detail="admin role required")

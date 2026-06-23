@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 import argparse
-import sys
 from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
 from hdfs_anomaly.metrics.classification import classification_summary, find_threshold_for_max_f1
 from hdfs_anomaly.models.tabular import TABULAR_MODEL_NAMES
+from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,7 +43,9 @@ def selected_model_names(config: dict) -> tuple[str, ...]:
         if config["models"].get(model_name, {}).get("enabled", True)
     )
     if not model_names:
-        raise ValueError("No tabular models selected. Check config run.models and models.*.enabled.")
+        raise ValueError(
+            "No tabular models selected. Check config run.models and models.*.enabled."
+        )
     return model_names
 
 
@@ -96,7 +94,9 @@ def evaluate_one_model(model_name: str, config: dict) -> tuple[dict, dict, dict]
     return threshold_summary, validation_summary, test_summary
 
 
-def save_metrics(config: dict, threshold_rows: list[dict], val_rows: list[dict], test_rows: list[dict]) -> None:
+def save_metrics(
+    config: dict, threshold_rows: list[dict], val_rows: list[dict], test_rows: list[dict]
+) -> None:
     reports_dir = config["tables_dir"]
     reports_dir.mkdir(parents=True, exist_ok=True)
     thresholds_df = pd.DataFrame(threshold_rows)

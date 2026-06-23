@@ -1,3 +1,5 @@
+from typing import cast
+
 import torch
 from torch import nn
 
@@ -29,4 +31,4 @@ class OneStepLSTMModel(nn.Module):
         embedded = self.embedding(x)
         output, _ = self.lstm(embedded)
         last_output = output[:, -1, :]
-        return self.fc(last_output)
+        return cast(torch.Tensor, self.fc(last_output))

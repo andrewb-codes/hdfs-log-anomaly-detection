@@ -3,18 +3,18 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
+ENV PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements-api.txt .
-RUN pip install --no-cache-dir --timeout 120 --retries 5 -r requirements-api.txt
-RUN pip install --no-cache-dir --timeout 120 --retries 5 \
-    --index-url https://download.pytorch.org/whl/cpu \
-    torch==2.12.1
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-group notebooks
 
 COPY src ./src
 COPY configs ./configs

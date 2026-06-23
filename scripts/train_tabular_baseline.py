@@ -1,20 +1,16 @@
 #!/usr/bin/env python
 import argparse
-import sys
 from pathlib import Path
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
 from hdfs_anomaly.data.loading import load_preprocessed_hdfs
-from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
 from hdfs_anomaly.features.tabular import build_tabular_feature_frame
 from hdfs_anomaly.models.tabular import TABULAR_MODEL_NAMES, build_tabular_model
+from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -78,7 +74,9 @@ def fit_model(
     return model
 
 
-def save_feature_importance(model_name: str, model, feature_names: list[str], output_dir: Path) -> None:
+def save_feature_importance(
+    model_name: str, model, feature_names: list[str], output_dir: Path
+) -> None:
     if model_name == "random_forest":
         importance = (
             pd.DataFrame(
@@ -185,7 +183,9 @@ def main() -> None:
     )
 
     if not model_names:
-        raise ValueError("No tabular models selected. Check config run.models and models.*.enabled.")
+        raise ValueError(
+            "No tabular models selected. Check config run.models and models.*.enabled."
+        )
 
     print("Config:", args.config)
     print(

@@ -57,7 +57,7 @@ def save_lstm_dataset(
         "val_block_ids": val_windows["block_id"].astype(str).to_numpy(),
         "test_block_ids": test_windows["block_id"].astype(str).to_numpy(),
     }
-    np.savez_compressed(output_dir / "dataset.npz", **arrays)
+    np.savez_compressed(output_dir / "dataset.npz", **arrays)  # type: ignore[arg-type]
 
     anomaly_blocks = {block_id for block_id, is_anomaly in label_map.items() if is_anomaly == 1}
     meta = {
