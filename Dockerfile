@@ -2,24 +2,23 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app/src
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 ENV PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=ghcr.io/astral-sh/uv:0.5.31 /uv /uvx /bin/
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-group notebooks
+RUN uv sync --frozen --no-dev --no-group notebooks --no-install-project
 
 COPY src ./src
 COPY configs ./configs
 COPY alembic.ini .
 COPY migrations ./migrations
+
+RUN uv sync --frozen --no-dev --no-group notebooks
 
 EXPOSE 8000
 
