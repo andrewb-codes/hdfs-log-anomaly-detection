@@ -14,6 +14,7 @@ dependencies = [
     "numpy",
     "pandas",
     "pydantic",
+    "pydantic-settings",
     "python-dotenv",
     "python-jose[cryptography]",
     "pyyaml",
