@@ -13,18 +13,16 @@ bearer_scheme = HTTPBearer()
 
 def authenticate_admin(username: str, password: str) -> bool:
     """Return whether credentials match configured admin credentials."""
-    username_matches = hmac.compare_digest(username, settings.api_admin_username)
-    password_matches = hmac.compare_digest(password, settings.api_admin_password)
+    username_matches = hmac.compare_digest(username, settings.admin_username)
+    password_matches = hmac.compare_digest(password, settings.admin_password)
     return username_matches and password_matches
 
 
 def create_access_token(subject: str, role: str) -> str:
     """Create a signed JWT access token for an authenticated API user."""
-    expires_at = datetime.now(UTC) + timedelta(minutes=settings.api_access_token_expire_minutes)
+    expires_at = datetime.now(UTC) + timedelta(minutes=settings.jwt_ttl_minutes)
     payload = {"sub": subject, "role": role, "exp": expires_at}
-    return cast(
-        str, jwt.encode(payload, settings.api_secret_key, algorithm=settings.api_jwt_algorithm)
-    )
+    return cast(str, jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm))
 
 
 def require_admin(
@@ -36,8 +34,8 @@ def require_admin(
             dict[str, Any],
             jwt.decode(
                 credentials.credentials,
-                settings.api_secret_key,
-                algorithms=[settings.api_jwt_algorithm],
+                settings.jwt_secret,
+                algorithms=[settings.jwt_algorithm],
             ),
         )
     except JWTError as exc:

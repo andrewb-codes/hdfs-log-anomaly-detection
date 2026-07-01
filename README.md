@@ -267,10 +267,10 @@ cp .env.example .env
 
 `.env` автоматически читается API и Streamlit при локальном запуске, а также используется `docker-compose.yml`. Файл `.env.example` содержит безопасный шаблон для коммита, а реальный `.env` игнорируется git.
 
-Для Docker Compose внешний порт frontend задаётся в `.env`:
+Для Docker Compose внешний порт Streamlit задаётся в `.env`:
 
 ```text
-FRONTEND_PORT=8501
+STREAMLIT_PORT=8501
 ```
 
 Локальный запуск:
@@ -286,11 +286,11 @@ uv run uvicorn hdfs_anomaly.api.app:app --reload
 uv run streamlit run src/hdfs_anomaly/frontend/app.py
 ```
 
-По умолчанию frontend обращается к `HDFS_API_URL`, а если переменная не задана - к `http://127.0.0.1:8000`. Адрес API можно переопределить явно:
+По умолчанию frontend обращается к `STREAMLIT_API_URL`, а если переменная не задана - к `http://127.0.0.1:8000`. Адрес API можно переопределить явно:
 
 ```bash
 uv run uvicorn hdfs_anomaly.api.app:app --reload --port 9000
-HDFS_API_URL=http://127.0.0.1:9000 uv run streamlit run src/hdfs_anomaly/frontend/app.py
+STREAMLIT_API_URL=http://127.0.0.1:9000 uv run streamlit run src/hdfs_anomaly/frontend/app.py
 ```
 
 Docker-запуск:
@@ -329,10 +329,11 @@ curl -X POST http://127.0.0.1:8000/forward \
 JWT-авторизация требует переменные окружения:
 
 ```text
-API_SECRET_KEY=change-me
-API_ADMIN_USERNAME=admin
-API_ADMIN_PASSWORD=admin
-API_ACCESS_TOKEN_EXPIRE_MINUTES=60
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+JWT_SECRET=change-me
+JWT_ALGORITHM=HS256
+JWT_TTL_MINUTES=60
 ```
 
 Для локального запуска скопируйте `.env.example` в `.env` и задайте свои значения.

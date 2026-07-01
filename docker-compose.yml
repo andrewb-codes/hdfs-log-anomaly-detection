@@ -2,11 +2,9 @@ services:
   api:
     build: .
     environment:
-      API_SECRET_KEY: "${API_SECRET_KEY:?API_SECRET_KEY is required}"
-      API_JWT_ALGORITHM: "${API_JWT_ALGORITHM:?API_JWT_ALGORITHM is required}"
-      API_ADMIN_USERNAME: "${API_ADMIN_USERNAME:?API_ADMIN_USERNAME is required}"
-      API_ADMIN_PASSWORD: "${API_ADMIN_PASSWORD:?API_ADMIN_PASSWORD is required}"
-      API_ACCESS_TOKEN_EXPIRE_MINUTES: "${API_ACCESS_TOKEN_EXPIRE_MINUTES:?API_ACCESS_TOKEN_EXPIRE_MINUTES is required}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:?ADMIN_USERNAME is required}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
     volumes:
       - ./artifacts:/app/artifacts
       - ./reports:/app/reports
@@ -17,9 +15,9 @@ services:
     depends_on:
       - api
     ports:
-      - "${FRONTEND_PORT:-8501}:8501"
+      - "${STREAMLIT_PORT:-8501}:8501"
     environment:
-      HDFS_API_URL: "${FRONTEND_API_URL:-http://api:8000}"
+      STREAMLIT_API_URL: "http://api:8000"
     command:
       - streamlit
       - run

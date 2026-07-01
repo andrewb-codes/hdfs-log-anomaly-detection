@@ -2,11 +2,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    api_secret_key: str
-    api_jwt_algorithm: str = "HS256"
-    api_access_token_expire_minutes: int = 60
-    api_admin_username: str
-    api_admin_password: str
+    jwt_secret: str
+    jwt_algorithm: str = "HS256"
+    jwt_ttl_minutes: int = 60
+    admin_username: str
+    admin_password: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -1,14 +1,11 @@
-import os
-
 import httpx
 import streamlit as st
-from dotenv import load_dotenv
 
-load_dotenv()
+from hdfs_anomaly.frontend.config import frontend_settings
 
 st.set_page_config(page_title="HDFS Anomaly Detection", layout="wide")
 
-default_api_url = os.getenv("HDFS_API_URL", "http://127.0.0.1:8000")
+default_api_url = frontend_settings.streamlit_api_url
 api_url = st.sidebar.text_input("API URL", default_api_url).rstrip("/")
 
 if "access_token" not in st.session_state:
@@ -35,9 +32,7 @@ headers = {}
 if st.session_state.access_token:
     headers["Authorization"] = f"Bearer {st.session_state.access_token}"
 
-tab_forward, tab_model, tab_history, tab_stats = st.tabs(
-    ["Forward", "Model", "History", "Stats"]
-)
+tab_forward, tab_model, tab_history, tab_stats = st.tabs(["Forward", "Model", "History", "Stats"])
 
 with tab_forward:
     block_id = st.text_input("Block ID", "blk_7503483334202473044")
