@@ -1,0 +1,26 @@
+{
+  "block_id": "blk_-3544583377289625738",
+  "log_lines": [
+    "081109 203521 145 INFO dfs.DataNode$DataXceiver: Receiving block blk_-3544583377289625738 src: /10.250.19.102:39325 dest: /10.250.19.102:50010",
+    "081109 203521 29 INFO dfs.FSNamesystem: BLOCK* NameSystem.allocateBlock: /mnt/hadoop/mapred/system/job_200811092030_0001/job.xml. blk_-3544583377289625738",
+    "081109 203522 144 INFO dfs.DataNode$DataXceiver: Receiving block blk_-3544583377289625738 src: /10.251.197.226:60229 dest: /10.251.197.226:50010",
+    "081109 203522 145 INFO dfs.DataNode$DataXceiver: Receiving block blk_-3544583377289625738 src: /10.250.11.100:54800 dest: /10.250.11.100:50010",
+    "081109 203522 147 INFO dfs.DataNode$PacketResponder: PacketResponder 2 for block blk_-3544583377289625738 terminating",
+    "081109 203522 147 INFO dfs.DataNode$PacketResponder: Received block blk_-3544583377289625738 of size 11971 from /10.250.19.102",
+    "081109 203523 146 INFO dfs.DataNode$PacketResponder: PacketResponder 1 for block blk_-3544583377289625738 terminating",
+    "081109 203523 146 INFO dfs.DataNode$PacketResponder: Received block blk_-3544583377289625738 of size 11971 from /10.251.197.226",
+    "081109 203523 147 INFO dfs.DataNode$PacketResponder: PacketResponder 0 for block blk_-3544583377289625738 terminating",
+    "081109 203523 147 INFO dfs.DataNode$PacketResponder: Received block blk_-3544583377289625738 of size 11971 from /10.250.11.100",
+    "081109 203523 148 INFO dfs.DataNode$DataXceiver: 10.250.11.100:50010 Served block blk_-3544583377289625738 to /10.250.19.102",
+    "081109 203523 29 INFO dfs.FSNamesystem: BLOCK* NameSystem.addStoredBlock: blockMap updated: 10.251.39.179:50010 is added to blk_-3544583377289625738 size 11971",
+    "081109 203523 33 INFO dfs.FSNamesystem: BLOCK* NameSystem.addStoredBlock: blockMap updated: 10.250.11.100:50010 is added to blk_-3544583377289625738 size 11971",
+    "081109 203523 33 INFO dfs.FSNamesystem: BLOCK* NameSystem.addStoredBlock: blockMap updated: 10.251.197.226:50010 is added to blk_-3544583377289625738 size 11971",
+    "081109 213809 32 INFO dfs.FSNamesystem: BLOCK* NameSystem.delete: blk_-3544583377289625738 is added to invalidSet of 10.250.11.100:50010",
+    "081109 213809 32 INFO dfs.FSNamesystem: BLOCK* NameSystem.delete: blk_-3544583377289625738 is added to invalidSet of 10.251.197.226:50010",
+    "081109 213809 32 INFO dfs.FSNamesystem: BLOCK* NameSystem.delete: blk_-3544583377289625738 is added to invalidSet of 10.251.39.179:50010",
+    "081109 213811 19 INFO dfs.FSDataset: Deleting block blk_-3544583377289625738 file /mnt/hadoop/dfs/data/current/blk_-3544583377289625738",
+    "081109 213838 19 WARN dfs.FSDataset: Unexpected error trying to delete block blk_-3544583377289625738. BlockInfo not found in volumeMap."
+  ],
+  "return_event_ids": true,
+  "return_window_scores": true
+}

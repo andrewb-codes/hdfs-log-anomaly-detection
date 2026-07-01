@@ -6,16 +6,20 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
     "alembic",
-    "drain3",
+    "cachetools==4.2.1",
+    "drain3==0.9.11",
     "fastapi",
+    "httpx",
     "joblib",
     "numpy",
     "pandas",
     "pydantic",
+    "python-dotenv",
     "python-jose[cryptography]",
     "pyyaml",
     "scikit-learn",
     "sqlalchemy",
+    "streamlit",
     "torch==2.12.1",
     "uvicorn",
 ]

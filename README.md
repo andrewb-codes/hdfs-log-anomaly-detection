@@ -28,6 +28,7 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a Fas
 - Сравнение anomaly scoring strategies: `topk_last`, `topk_all`, `topk_last3`, `nll_mean`, `nll_p95`, `nll_max`.
 - Эксперименты с архитектурой LSTM.
 - FastAPI-сервис для inference по raw HDFS log lines с сохранением истории запросов в SQLite.
+- Streamlit-фронтенд для запуска inference и просмотра служебных endpoints.
 
 ## Стек
 
@@ -36,7 +37,8 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a Fas
 - PyTorch для LSTM-моделей;
 - Drain3 для парсинга raw HDFS logs в event templates;
 - FastAPI, SQLAlchemy, SQLite, Alembic для ML-сервиса;
-- Docker / Docker Compose для контейнерного запуска API;
+- Streamlit для frontend-интерфейса;
+- Docker / Docker Compose для контейнерного запуска API и frontend;
 - uv, Ruff, mypy для управления зависимостями, форматирования и type checking;
 - Matplotlib для визуализации;
 - Jupyter notebooks для EDA и анализа результатов;
@@ -80,11 +82,12 @@ threshold selected on validation by max F1
 ├── artifacts/               # модели, подготовленные датасеты, Drain state
 ├── notebooks/               # EDA и анализ результатов
 ├── reports/                 # таблицы метрик и графики
+├── examples/                # готовые raw logs и JSON payloads для API/frontend
 ├── scripts/                 # entrypoint-скрипты обучения/evaluation
 ├── pyproject.toml           # зависимости, package metadata, Ruff/mypy config
 ├── uv.lock                  # lock-файл для воспроизводимой установки
-├── Dockerfile               # контейнер API
-├── docker-compose.yml       # запуск API с mounted artifacts/reports/configs
+├── Dockerfile               # общий контейнер API/frontend
+├── docker-compose.yml       # запуск API и frontend с mounted artifacts/reports/configs
 └── src/hdfs_anomaly/        # основной Python-код проекта
 ```
 
@@ -99,6 +102,7 @@ src/hdfs_anomaly/
 ├── parsing/     # Drain parser для raw HDFS logs
 ├── sequences/   # split, windowing, сохранение LSTM datasets
 ├── api/         # FastAPI inference service
+├── frontend/    # Streamlit frontend
 └── utils/       # служебные функции для экспериментов
 ```
 
@@ -255,11 +259,38 @@ uv run python scripts/evaluate_lstm_many_to_many.py --config configs/lstm_many_t
 
 Перед запуском должны быть доступны файлы модели, Drain transformer и таблица threshold, указанные в `configs/api.yaml`.
 
+Локальные переменные окружения можно положить в `.env`:
+
+```bash
+cp .env.example .env
+```
+
+`.env` автоматически читается API и Streamlit при локальном запуске, а также используется `docker-compose.yml`. Файл `.env.example` содержит безопасный шаблон для коммита, а реальный `.env` игнорируется git.
+
+Для Docker Compose внешний порт frontend задаётся в `.env`:
+
+```text
+FRONTEND_PORT=8501
+```
+
 Локальный запуск:
 
 ```bash
 uv run alembic upgrade head
 uv run uvicorn hdfs_anomaly.api.app:app --reload
+```
+
+В отдельном терминале можно запустить Streamlit-фронтенд:
+
+```bash
+uv run streamlit run src/hdfs_anomaly/frontend/app.py
+```
+
+По умолчанию frontend обращается к `HDFS_API_URL`, а если переменная не задана - к `http://127.0.0.1:8000`. Адрес API можно переопределить явно:
+
+```bash
+uv run uvicorn hdfs_anomaly.api.app:app --reload --port 9000
+HDFS_API_URL=http://127.0.0.1:9000 uv run streamlit run src/hdfs_anomaly/frontend/app.py
 ```
 
 Docker-запуск:
@@ -268,24 +299,43 @@ Docker-запуск:
 docker compose up --build
 ```
 
-Docker image собирается через `uv sync --frozen --no-dev --no-group notebooks`, поэтому в контейнер попадают только runtime-зависимости API. Данные, модели и reports не вшиваются в image: `docker-compose.yml` монтирует локальные папки `./artifacts`, `./reports` и `./configs` внутрь контейнера. При старте контейнер автоматически выполняет `alembic upgrade head`, а затем запускает `uvicorn`.
+Docker image собирается через `uv sync --frozen --no-dev --no-group notebooks`, поэтому в контейнер попадают только runtime-зависимости API и frontend. Данные, модели и reports не вшиваются в image: `docker-compose.yml` монтирует локальные папки `./artifacts`, `./reports` и `./configs` внутрь API-контейнера. При старте API-контейнер автоматически выполняет `alembic upgrade head`, а затем запускает `uvicorn`. API не публикуется на host и доступен только внутри Docker-сети по адресу `http://api:8000`; frontend-контейнер обращается к этому внутреннему адресу.
 
-Проверка:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-По умолчанию JWT-авторизация использует dev-defaults:
+Streamlit UI после запуска доступен по адресу:
 
 ```text
-API_SECRET_KEY=dev-secret-key
+http://127.0.0.1:8501
+```
+
+Примеры raw logs для быстрой проверки лежат в `examples/`:
+
+```text
+examples/normal_block_logs.txt
+examples/anomaly_block_logs.txt
+```
+
+Их можно вставить в поле `Log lines` в Streamlit. Для локального запуска API без Docker также доступны готовые payloads:
+
+```bash
+curl -X POST http://127.0.0.1:8000/forward \
+  -H "Content-Type: application/json" \
+  -d @examples/api_forward_normal.json
+
+curl -X POST http://127.0.0.1:8000/forward \
+  -H "Content-Type: application/json" \
+  -d @examples/api_forward_anomaly.json
+```
+
+JWT-авторизация требует переменные окружения:
+
+```text
+API_SECRET_KEY=change-me
 API_ADMIN_USERNAME=admin
 API_ADMIN_PASSWORD=admin
 API_ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
-В реальном окружении эти значения нужно переопределить через environment variables.
+Для локального запуска скопируйте `.env.example` в `.env` и задайте свои значения.
 
 Основные endpoints:
 

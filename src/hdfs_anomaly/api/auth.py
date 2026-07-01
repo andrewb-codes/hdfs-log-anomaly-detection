@@ -3,16 +3,27 @@ import os
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 
-SECRET_KEY = os.getenv("API_SECRET_KEY", "dev-secret-key")
-ALGORITHM = os.getenv("API_JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("API_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+load_dotenv()
 
-ADMIN_USERNAME = os.getenv("API_ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("API_ADMIN_PASSWORD", "admin")
+
+def _get_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if value is None or value == "":
+        raise RuntimeError(f"{name} environment variable is required")
+    return value
+
+
+SECRET_KEY = _get_required_env("API_SECRET_KEY")
+ALGORITHM = _get_required_env("API_JWT_ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(_get_required_env("API_ACCESS_TOKEN_EXPIRE_MINUTES"))
+
+ADMIN_USERNAME = _get_required_env("API_ADMIN_USERNAME")
+ADMIN_PASSWORD = _get_required_env("API_ADMIN_PASSWORD")
 
 bearer_scheme = HTTPBearer()
 
