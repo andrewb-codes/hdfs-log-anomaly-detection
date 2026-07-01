@@ -71,7 +71,7 @@ class ModelInfoResponse(BaseModel):
     device: str
 
 
-class TokenRequest(BaseModel):
+class LoginRequest(BaseModel):
     username: str
     password: str
 

@@ -14,9 +14,9 @@ from hdfs_anomaly.api.schemas import (
     ForwardRequest,
     ForwardResponse,
     HistoryItem,
+    LoginRequest,
     ModelInfoResponse,
     StatsResponse,
-    TokenRequest,
     TokenResponse,
 )
 
@@ -50,8 +50,8 @@ def get_resources() -> InferenceResources:
     return resources
 
 
-@app.post("/auth/token", response_model=TokenResponse)
-def login(request: TokenRequest) -> TokenResponse:
+@app.post("/auth/login", response_model=TokenResponse)
+def login(request: LoginRequest) -> TokenResponse:
     if not authenticate_admin(request.username, request.password):
         raise HTTPException(status_code=401, detail="invalid credentials")
 

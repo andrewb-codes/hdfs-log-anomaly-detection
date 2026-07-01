@@ -292,7 +292,7 @@ API_ACCESS_TOKEN_EXPIRE_MINUTES=60
 | Method | Route | Назначение |
 |---|---|---|
 | `GET` | `/health` | Проверка состояния сервиса и загрузки модели |
-| `POST` | `/auth/token` | Получение JWT для admin endpoints |
+| `POST` | `/auth/login` | Получение JWT для admin endpoints |
 | `GET` | `/model-info` | Информация о загруженной модели, threshold и scoring |
 | `POST` | `/forward` | Inference по raw HDFS log lines |
 | `GET` | `/history` | История успешных и неуспешных model calls |
@@ -308,7 +308,7 @@ Authorization: Bearer <access_token>
 Получение токена:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/auth/token \
+curl -X POST http://127.0.0.1:8000/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "admin", "password": "admin"}'
 ```
