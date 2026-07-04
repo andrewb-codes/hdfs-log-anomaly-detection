@@ -5,24 +5,35 @@ description = "Anomaly detection in HDFS logs using tabular ML, LSTM sequence mo
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
+    "pydantic",
+    "pydantic-settings",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+api = [
     "alembic",
     "cachetools==4.2.1",
     "drain3==0.9.11",
     "fastapi",
-    "httpx",
     "joblib",
     "numpy",
     "pandas",
-    "pydantic",
-    "pydantic-settings",
-    "python-dotenv",
     "python-jose[cryptography]",
     "pyyaml",
     "scikit-learn",
     "sqlalchemy",
-    "streamlit",
     "torch==2.12.1",
     "uvicorn",
+]
+
+frontend = [
+    "httpx",
+    "streamlit",
+]
+
+all = [
+    "hdfs-log-anomaly-detection[api,frontend]",
 ]
 
 [build-system]

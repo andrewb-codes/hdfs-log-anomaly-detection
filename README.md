@@ -86,7 +86,8 @@ threshold selected on validation by max F1
 ├── scripts/                 # entrypoint-скрипты обучения/evaluation
 ├── pyproject.toml           # зависимости, package metadata, Ruff/mypy config
 ├── uv.lock                  # lock-файл для воспроизводимой установки
-├── Dockerfile               # общий контейнер API/frontend
+├── Dockerfile.api           # runtime image для FastAPI inference service
+├── Dockerfile.frontend      # runtime image для Streamlit frontend
 ├── docker-compose.yml       # запуск API и frontend с mounted artifacts/reports/configs
 └── src/hdfs_anomaly/        # основной Python-код проекта
 ```
@@ -144,13 +145,25 @@ data/preprocessed/HDFS.npz
 Полное окружение для разработки, ноутбуков и экспериментов:
 
 ```bash
-uv sync --all-groups
+uv sync --all-extras --all-groups
 ```
 
-Runtime-окружение без notebook/dev-зависимостей:
+Runtime-окружение API и frontend без notebook/dev-зависимостей:
 
 ```bash
-uv sync --no-dev --no-group notebooks
+uv sync --no-dev --no-group notebooks --extra api --extra frontend
+```
+
+Только API runtime:
+
+```bash
+uv sync --no-dev --no-group notebooks --extra api
+```
+
+Только Streamlit frontend runtime:
+
+```bash
+uv sync --no-dev --no-group notebooks --extra frontend
 ```
 
 Быстрые проверки кода:
@@ -286,12 +299,7 @@ uv run uvicorn hdfs_anomaly.api.app:app --reload
 uv run streamlit run src/hdfs_anomaly/frontend/app.py
 ```
 
-По умолчанию frontend обращается к `STREAMLIT_API_URL`, а если переменная не задана - к `http://127.0.0.1:8000`. Адрес API можно переопределить явно:
-
-```bash
-uv run uvicorn hdfs_anomaly.api.app:app --reload --port 9000
-STREAMLIT_API_URL=http://127.0.0.1:9000 uv run streamlit run src/hdfs_anomaly/frontend/app.py
-```
+Frontend обращается к адресу из `STREAMLIT_API_URL`, а если переменная не задана - к `http://127.0.0.1:8000`.
 
 Docker-запуск:
 
@@ -299,7 +307,16 @@ Docker-запуск:
 docker compose up --build
 ```
 
-Docker image собирается через `uv sync --frozen --no-dev --no-group notebooks`, поэтому в контейнер попадают только runtime-зависимости API и frontend. Данные, модели и reports не вшиваются в image: `docker-compose.yml` монтирует локальные папки `./artifacts`, `./reports` и `./configs` внутрь API-контейнера. При старте API-контейнер автоматически выполняет `alembic upgrade head`, а затем запускает `uvicorn`. API не публикуется на host и доступен только внутри Docker-сети по адресу `http://api:8000`; frontend-контейнер обращается к этому внутреннему адресу.
+Docker Compose собирает два отдельных image:
+
+- `api` из `Dockerfile.api` с extra `api`, куда входят FastAPI, PyTorch, pandas, scikit-learn и inference-зависимости;
+- `frontend` из `Dockerfile.frontend` с extra `frontend`, куда входят только Streamlit, HTTP-клиент и общие настройки.
+
+Оба Dockerfile используют BuildKit cache mount для `/root/.cache/uv`, чтобы кеш скачанных wheels ускорял rebuild, 
+но не попадал в итоговый image. Данные, модели и reports не вшиваются в image: `docker-compose.yml` монтирует локальные 
+папки `./artifacts`, `./reports` и `./configs` внутрь API-контейнера. При старте API-контейнер автоматически выполняет 
+`alembic upgrade head`, а затем запускает `uvicorn`. API не публикуется на host и доступен только внутри Docker-сети 
+по адресу `http://api:8000`; frontend-контейнер обращается к этому внутреннему адресу.
 
 Streamlit UI после запуска доступен по адресу:
 

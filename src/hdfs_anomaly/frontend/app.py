@@ -5,8 +5,7 @@ from hdfs_anomaly.frontend.config import frontend_settings
 
 st.set_page_config(page_title="HDFS Anomaly Detection", layout="wide")
 
-default_api_url = frontend_settings.streamlit_api_url
-api_url = st.sidebar.text_input("API URL", default_api_url).rstrip("/")
+api_url = frontend_settings.streamlit_api_url.rstrip("/")
 
 if "access_token" not in st.session_state:
     st.session_state.access_token = None

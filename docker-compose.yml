@@ -1,6 +1,8 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     environment:
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required}"
       ADMIN_USERNAME: "${ADMIN_USERNAME:?ADMIN_USERNAME is required}"
@@ -17,11 +19,9 @@ services:
       start_period: 30s
 
   frontend:
-    build: .
-    command: >
-      streamlit run src/hdfs_anomaly/frontend/app.py
-      --server.address 0.0.0.0
-      --server.port 8501
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
     environment:
       STREAMLIT_API_URL: "http://api:8000"
     ports:

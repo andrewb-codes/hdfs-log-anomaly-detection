@@ -642,6 +642,13 @@ name = "hdfs-log-anomaly-detection"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-dotenv" },
+]
+
+[package.optional-dependencies]
+all = [
     { name = "alembic" },
     { name = "cachetools" },
     { name = "drain3" },
@@ -650,9 +657,6 @@ dependencies = [
     { name = "joblib" },
     { name = "numpy" },
     { name = "pandas" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "python-dotenv" },
     { name = "python-jose", extra = ["cryptography"] },
     { name = "pyyaml" },
     { name = "scikit-learn" },
@@ -661,6 +665,26 @@ dependencies = [
     { name = "torch", version = "2.12.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
     { name = "torch", version = "2.12.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
     { name = "uvicorn" },
+]
+api = [
+    { name = "alembic" },
+    { name = "cachetools" },
+    { name = "drain3" },
+    { name = "fastapi" },
+    { name = "joblib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "python-jose", extra = ["cryptography"] },
+    { name = "pyyaml" },
+    { name = "scikit-learn" },
+    { name = "sqlalchemy" },
+    { name = "torch", version = "2.12.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
+    { name = "torch", version = "2.12.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'linux'" },
+    { name = "uvicorn" },
+]
+frontend = [
+    { name = "httpx" },
+    { name = "streamlit" },
 ]
 
 [package.dev-dependencies]
@@ -678,26 +702,28 @@ notebooks = [
 
 [package.metadata]
 requires-dist = [
-    { name = "alembic" },
-    { name = "cachetools", specifier = "==4.2.1" },
-    { name = "drain3", specifier = "==0.9.11" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "joblib" },
-    { name = "numpy" },
-    { name = "pandas" },
+    { name = "alembic", marker = "extra == 'api'" },
+    { name = "cachetools", marker = "extra == 'api'", specifier = "==4.2.1" },
+    { name = "drain3", marker = "extra == 'api'", specifier = "==0.9.11" },
+    { name = "fastapi", marker = "extra == 'api'" },
+    { name = "hdfs-log-anomaly-detection", extras = ["api", "frontend"], marker = "extra == 'all'" },
+    { name = "httpx", marker = "extra == 'frontend'" },
+    { name = "joblib", marker = "extra == 'api'" },
+    { name = "numpy", marker = "extra == 'api'" },
+    { name = "pandas", marker = "extra == 'api'" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
-    { name = "python-jose", extras = ["cryptography"] },
-    { name = "pyyaml" },
-    { name = "scikit-learn" },
-    { name = "sqlalchemy" },
-    { name = "streamlit" },
-    { name = "torch", marker = "sys_platform != 'linux'", specifier = "==2.12.1" },
-    { name = "torch", marker = "sys_platform == 'linux'", specifier = "==2.12.1", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "uvicorn" },
+    { name = "python-jose", extras = ["cryptography"], marker = "extra == 'api'" },
+    { name = "pyyaml", marker = "extra == 'api'" },
+    { name = "scikit-learn", marker = "extra == 'api'" },
+    { name = "sqlalchemy", marker = "extra == 'api'" },
+    { name = "streamlit", marker = "extra == 'frontend'" },
+    { name = "torch", marker = "sys_platform == 'linux' and extra == 'api'", specifier = "==2.12.1", index = "https://download.pytorch.org/whl/cpu" },
+    { name = "torch", marker = "sys_platform != 'linux' and extra == 'api'", specifier = "==2.12.1" },
+    { name = "uvicorn", marker = "extra == 'api'" },
 ]
+provides-extras = ["api", "frontend", "all"]
 
 [package.metadata.requires-dev]
 dev = [
