@@ -278,7 +278,7 @@ uv run python scripts/evaluate_lstm_many_to_many.py --config configs/lstm_many_t
 cp .env.example .env
 ```
 
-`.env` автоматически читается API и Streamlit при локальном запуске, а также используется `docker-compose.yml`. Файл `.env.example` содержит безопасный шаблон для коммита, а реальный `.env` игнорируется git.
+`.env` автоматически читается API и Streamlit, а также используется `docker-compose.yml`. Файл `.env.example` содержит безопасный Docker Compose шаблон для коммита, а реальный `.env` игнорируется git.
 
 Для Docker Compose внешний порт Streamlit задаётся в `.env`:
 
@@ -293,13 +293,13 @@ uv run alembic upgrade head
 uv run uvicorn hdfs_anomaly.api.app:app --reload
 ```
 
-В отдельном терминале можно запустить Streamlit-фронтенд:
+В отдельном терминале можно запустить Streamlit-фронтенд, явно указав локальный адрес API:
 
 ```bash
-uv run streamlit run src/hdfs_anomaly/frontend/app.py
+STREAMLIT_API_URL=http://127.0.0.1:8000 uv run streamlit run src/hdfs_anomaly/frontend/app.py
 ```
 
-Frontend обращается к адресу из `STREAMLIT_API_URL`, а если переменная не задана - к `http://127.0.0.1:8000`.
+Frontend обращается к адресу из обязательной переменной `STREAMLIT_API_URL`. В Docker Compose она обычно равна `http://api:8000`, потому что frontend-контейнер обращается к API по имени сервиса внутри Docker-сети.
 
 Docker-запуск:
 
@@ -343,15 +343,15 @@ curl -X POST http://127.0.0.1:8000/forward \
   -d @examples/api_forward_anomaly.json
 ```
 
-JWT-авторизация требует переменные окружения:
+JWT-авторизация требует обязательные переменные окружения:
 
 ```text
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin
 JWT_SECRET=change-me
-JWT_ALGORITHM=HS256
-JWT_TTL_MINUTES=60
 ```
+
+`JWT_ALGORITHM` и `JWT_TTL_MINUTES` имеют дефолты в `src/hdfs_anomaly/api/config.py`.
 
 Для локального запуска скопируйте `.env.example` в `.env` и задайте свои значения.
 

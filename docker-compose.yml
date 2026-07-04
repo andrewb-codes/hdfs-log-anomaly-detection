@@ -23,9 +23,9 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     environment:
-      STREAMLIT_API_URL: "http://api:8000"
+      STREAMLIT_API_URL: "${STREAMLIT_API_URL:?STREAMLIT_API_URL is required}"
     ports:
-      - "${STREAMLIT_PORT:-8501}:8501"
+      - "${STREAMLIT_PORT}:8501"
     depends_on:
       api:
         condition: service_healthy

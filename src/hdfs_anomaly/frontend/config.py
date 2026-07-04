@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class FrontendSettings(BaseSettings):
-    streamlit_api_url: str = "http://127.0.0.1:8000"
+    streamlit_api_url: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -11,4 +11,4 @@ class FrontendSettings(BaseSettings):
     )
 
 
-frontend_settings = FrontendSettings()
+frontend_settings = FrontendSettings()  # type: ignore[call-arg]
