@@ -27,11 +27,14 @@ dist/
 .ruff_cache/
 .mypy_cache/
 .uv-cache/
+.uv/
 .pyre/
 .coverage
 .coverage.*
 htmlcov/
 coverage.xml
+junit.xml
+test-results/
 
 # Jupyter/IPython
 .ipynb_checkpoints/
@@ -46,6 +49,11 @@ ipython_config.py
 # Logs and local runtime files
 *.log
 *.pid
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
 tempCodeRunnerFile.py
 .matplotlib_cache/
 
@@ -79,3 +87,10 @@ reports/eda/tables/timeinterval_stats_per_trace.csv
 reports/tabular_baselines/tables/scores_*.csv
 reports/lstm_one_step/*/tables/scores_*.csv
 reports/lstm_many_to_many/*/tables/scores_*.csv
+
+# Local Ansible deployment secrets
+deploy/ansible/inventory.ini
+deploy/ansible/group_vars/*.vault.yml
+!deploy/ansible/group_vars/*.vault.yml.example
+deploy/ansible/group_vars/**/vault.yml
+!deploy/ansible/group_vars/**/vault.yml.example

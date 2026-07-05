@@ -1,0 +1,135 @@
+- name: Deploy HDFS Anomaly Detection
+  hosts: portfolio
+  become: true
+
+  handlers:
+    - name: Restart docker
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Create Docker apt key directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Install Docker apt key
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}/gpg"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Configure Docker apt repository
+      ansible.builtin.deb822_repository:
+        name: docker
+        types:
+          - deb
+        uris:
+          - "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}"
+        suites:
+          - "{{ ansible_facts['distribution_release'] }}"
+        components:
+          - stable
+        architectures:
+          - "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' if ansible_facts['architecture'] == 'aarch64' else ansible_facts['architecture'] }}"
+        signed_by: /etc/apt/keyrings/docker.asc
+        state: present
+
+    - name: Install Docker Engine and Compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+      notify: Restart docker
+
+    - name: Enable Docker service
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Create public Docker network for reverse proxy
+      ansible.builtin.command:
+        cmd: docker network create {{ docker_public_network }}
+      register: docker_public_network_create
+      changed_when: docker_public_network_create.rc == 0
+      failed_when:
+        - docker_public_network_create.rc != 0
+        - "'already exists' not in docker_public_network_create.stderr"
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Create mounted application directories
+      ansible.builtin.file:
+        path: "{{ app_dir }}/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - artifacts
+        - reports
+        - configs
+
+    - name: Render production environment file
+      ansible.builtin.template:
+        src: env.j2
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0600"
+
+    - name: Render production Docker Compose file
+      ansible.builtin.template:
+        src: docker-compose.prod.yml.j2
+        dest: "{{ app_dir }}/docker-compose.prod.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+
+    - name: Pull application images
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.prod.yml pull
+        chdir: "{{ app_dir }}"
+      changed_when: true
+
+    - name: Run Alembic migrations
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.prod.yml run --rm api alembic upgrade head
+        chdir: "{{ app_dir }}"
+      changed_when: true
+
+    - name: Start application services
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.prod.yml up -d api frontend
+        chdir: "{{ app_dir }}"
+      changed_when: true
+
+    - name: Show service status
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.prod.yml ps
+        chdir: "{{ app_dir }}"
+      register: compose_ps
+      changed_when: false
+
+    - name: Print service status
+      ansible.builtin.debug:
+        var: compose_ps.stdout_lines

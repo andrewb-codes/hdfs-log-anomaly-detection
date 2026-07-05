@@ -1,0 +1,54 @@
+services:
+  api:
+    image: "{{ api_image_ref }}"
+    environment:
+      ADMIN_USERNAME: "${ADMIN_USERNAME:?ADMIN_USERNAME is required}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required}"
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./reports:/app/reports
+      - ./configs:/app/configs
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    networks:
+      - default
+    restart: unless-stopped
+
+  frontend:
+    image: "{{ frontend_image_ref }}"
+    environment:
+      STREAMLIT_API_URL: "http://api:8000"
+    expose:
+      - "8501"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    networks:
+      {{ docker_public_network }}:
+        aliases:
+          - {{ frontend_network_alias }}
+      default:
+    restart: unless-stopped
+
+networks:
+  {{ docker_public_network }}:
+    external: true

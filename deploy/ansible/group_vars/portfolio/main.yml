@@ -1,0 +1,16 @@
+app_dir: /opt/apps/hdfs-anomaly
+
+api_image: ghcr.io/andrewb-codes/hdfs-log-anomaly-detection-api
+frontend_image: ghcr.io/andrewb-codes/hdfs-log-anomaly-detection-frontend
+app_image_tag: main
+
+api_image_ref: "{{ api_image }}:{{ app_image_tag }}"
+frontend_image_ref: "{{ frontend_image }}:{{ app_image_tag }}"
+
+docker_public_network: web
+frontend_network_alias: hdfs-anomaly-frontend
+
+app_env:
+  ADMIN_USERNAME: "{{ admin_username }}"
+  ADMIN_PASSWORD: "{{ admin_password }}"
+  JWT_SECRET: "{{ jwt_secret }}"
