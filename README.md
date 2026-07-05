@@ -2,9 +2,12 @@
 
 Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a FastAPI inference service.
 
-Проект посвящён поиску аномалий в логах распределённой файловой системы HDFS. Цель - построить и сравнить несколько подходов, которые по событиям внутри `block_id` определяют, является ли блок нормальным или аномальным.
+Проект посвящён поиску аномалий в логах распределённой файловой системы HDFS. Цель - построить и сравнить несколько 
+подходов, которые по событиям внутри `block_id` определяют, является ли блок нормальным или аномальным.
 
-Основной акцент сделан на sequence-based постановке: на инференсе события считаются поступающими последовательно, поэтому модель не должна полагаться только на признаки всего блока целиком. Табличные модели используются как baseline и sanity check, а LSTM-модели - как более близкий к production-like сценарию подход.
+Основной акцент сделан на sequence-based постановке: на инференсе события считаются поступающими последовательно, 
+поэтому модель не должна полагаться только на признаки всего блока целиком. Табличные модели используются как baseline 
+и sanity check, а LSTM-модели - как более близкий к production-like сценарию подход.
 
 ## Ключевой результат
 
@@ -14,9 +17,13 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a Fas
 |---:|---:|---:|---:|---:|
 | 0.911 | 0.966 | 0.863 | 0.0041 | 0.975 |
 
-Главный вывод: для HDFS logs сильнее всего работает не средняя ошибка по блоку, а самый неожиданный переход внутри последовательности. Это соответствует интуиции задачи: аномальный `block_id` часто отличается одним или несколькими резкими нарушениями нормального порядка событий.
+Главный вывод: для HDFS logs сильнее всего работает не средняя ошибка по блоку, а самый неожиданный переход внутри 
+последовательности. Это соответствует интуиции задачи: аномальный `block_id` часто отличается одним или несколькими 
+резкими нарушениями нормального порядка событий.
 
-Репозиторий демонстрирует полный ML workflow: EDA, feature engineering, baseline-модели, sequence-модели, подбор anomaly scoring, воспроизводимые YAML-конфиги, сохранение reports/artifacts и FastAPI-сервис для inference по raw log lines.
+Репозиторий демонстрирует полный ML workflow: EDA, feature engineering, baseline-модели, sequence-модели, 
+подбор anomaly scoring, воспроизводимые YAML-конфиги, сохранение reports/artifacts и FastAPI-сервис для 
+inference по raw log lines.
 
 ## Что сделано
 
@@ -53,7 +60,8 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a Fas
 - Табличные baseline-модели, которые видят весь блок целиком.
 - Последовательные LSTM-модели, которые работают с окнами событий и ближе к production-like сценарию, где события приходят последовательно.
 
-Табличные модели показывают, что в данных есть сильный сигнал, но они используют полную информацию о блоке сразу. Основной фокус проекта - sequence-модели и способы агрегировать их предсказания в anomaly score на уровне блока.
+Табличные модели показывают, что в данных есть сильный сигнал, но они используют полную информацию о блоке сразу. 
+Основной фокус проекта - sequence-модели и способы агрегировать их предсказания в anomaly score на уровне блока.
 
 Общий pipeline:
 
@@ -77,13 +85,16 @@ threshold selected on validation by max F1
 
 ```text
 .
+├── .github/workflows/       # GitHub Actions checks, build и deploy workflow
 ├── configs/                 # YAML-конфиги экспериментов
 ├── data/                    # локальные данные, не коммитятся
 ├── artifacts/               # модели, подготовленные датасеты, Drain state
+├── deploy/ansible/          # Ansible playbook и production compose template для VPS
 ├── notebooks/               # EDA и анализ результатов
 ├── reports/                 # таблицы метрик и графики
 ├── examples/                # готовые raw logs и JSON payloads для API/frontend
 ├── scripts/                 # entrypoint-скрипты обучения/evaluation
+├── .env.example             # безопасный Docker Compose шаблон переменных окружения
 ├── pyproject.toml           # зависимости, package metadata, Ruff/mypy config
 ├── uv.lock                  # lock-файл для воспроизводимой установки
 ├── Dockerfile.api           # runtime image для FastAPI inference service
@@ -109,9 +120,13 @@ src/hdfs_anomaly/
 
 ## Данные
 
-Используется набор `HDFS_v1` из [LogPai LogHub](https://github.com/logpai/loghub). Данные не входят в репозиторий; ожидаемая локальная структура описана в [data/README.md](data/README.md).
+Используется набор `HDFS_v1` из [LogPai LogHub](https://github.com/logpai/loghub). Данные не входят в репозиторий; ожидаемая локальная структура 
+описана в [data/README.md](data/README.md).
 
-`HDFS_v1` содержит системные логи Hadoop Distributed File System. В этом датасете события группируются по `block_id`, а разметка задаётся на уровне блока: каждый блок считается нормальным или аномальным. В проекте используются как raw logs для повторного парсинга через Drain3, так и предобработанные файлы с `EventId`, `EventTemplate` и block-level labels.
+`HDFS_v1` содержит системные логи Hadoop Distributed File System. В этом датасете события группируются по `block_id`, 
+а разметка задаётся на уровне блока: каждый блок считается нормальным или аномальным. 
+В проекте используются как raw logs для повторного парсинга через Drain3, так и предобработанные файлы с 
+`EventId`, `EventTemplate` и block-level labels.
 
 Краткая статистика используемой версии данных:
 
@@ -272,19 +287,27 @@ uv run python scripts/evaluate_lstm_many_to_many.py --config configs/lstm_many_t
 
 Перед запуском должны быть доступны файлы модели, Drain transformer и таблица threshold, указанные в `configs/api.yaml`.
 
-Локальные переменные окружения можно положить в `.env`:
+Переменные окружения для Docker Compose можно положить в `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-`.env` автоматически читается API и Streamlit, а также используется `docker-compose.yml`. Файл `.env.example` содержит безопасный Docker Compose шаблон для коммита, а реальный `.env` игнорируется git.
+`.env` автоматически читается API и Streamlit, а также используется `docker-compose.yml`. 
+Файл `.env.example` содержит безопасный Docker Compose шаблон для коммита, а реальный `.env` игнорируется git.
 
-Для Docker Compose внешний порт Streamlit задаётся в `.env`:
+Для Docker Compose нужны обязательные переменные:
 
 ```text
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change-me
+JWT_SECRET=change-me
+STREAMLIT_API_URL=http://api:8000
 STREAMLIT_PORT=8501
 ```
+
+`STREAMLIT_API_URL=http://api:8000` подходит именно для Docker Compose: frontend-контейнер обращается к API 
+по имени сервиса внутри Docker-сети.
 
 Локальный запуск:
 
@@ -299,12 +322,14 @@ uv run uvicorn hdfs_anomaly.api.app:app --reload
 STREAMLIT_API_URL=http://127.0.0.1:8000 uv run streamlit run src/hdfs_anomaly/frontend/app.py
 ```
 
-Frontend обращается к адресу из обязательной переменной `STREAMLIT_API_URL`. В Docker Compose она обычно равна `http://api:8000`, потому что frontend-контейнер обращается к API по имени сервиса внутри Docker-сети.
+Frontend обращается к адресу из обязательной переменной `STREAMLIT_API_URL`.
 
 Docker-запуск:
 
 ```bash
-docker compose up --build
+docker compose build
+docker compose run --rm api alembic upgrade head
+docker compose up
 ```
 
 Docker Compose собирает два отдельных image:
@@ -313,10 +338,11 @@ Docker Compose собирает два отдельных image:
 - `frontend` из `Dockerfile.frontend` с extra `frontend`, куда входят только Streamlit, HTTP-клиент и общие настройки.
 
 Оба Dockerfile используют BuildKit cache mount для `/root/.cache/uv`, чтобы кеш скачанных wheels ускорял rebuild, 
-но не попадал в итоговый image. Данные, модели и reports не вшиваются в image: `docker-compose.yml` монтирует локальные 
-папки `./artifacts`, `./reports` и `./configs` внутрь API-контейнера. При старте API-контейнер автоматически выполняет 
-`alembic upgrade head`, а затем запускает `uvicorn`. API не публикуется на host и доступен только внутри Docker-сети 
-по адресу `http://api:8000`; frontend-контейнер обращается к этому внутреннему адресу.
+но не попадал в итоговый image. Данные, модели и reports не вшиваются в image: `docker-compose.yml` 
+монтирует локальные папки `./artifacts`, `./reports` и `./configs` внутрь API-контейнера. 
+Alembic миграции запускаются отдельной командой через `docker compose run --rm api alembic upgrade head`; 
+API-контейнер при обычном старте запускает только `uvicorn`. API не публикуется на host и доступен только внутри 
+Docker-сети по адресу `http://api:8000`; frontend-контейнер обращается к этому внутреннему адресу.
 
 Streamlit UI после запуска доступен по адресу:
 
@@ -353,7 +379,15 @@ JWT_SECRET=change-me
 
 `JWT_ALGORITHM` и `JWT_TTL_MINUTES` имеют дефолты в `src/hdfs_anomaly/api/config.py`.
 
-Для локального запуска скопируйте `.env.example` в `.env` и задайте свои значения.
+## CI/CD И Деплой
+
+GitHub Actions workflow в `.github/workflows/ci.yml` запускает ruff, mypy, собирает два 
+Docker image (`api` и `frontend`) и публикует их в GHCR при push в `main`.
+
+Production deploy описан в [deploy/ansible/README.md](deploy/ansible/README.md). 
+Ansible playbook подтягивает готовые images на VPS, рендерит `.env` и `docker-compose.prod.yml`, 
+отдельно запускает Alembic миграции, а затем поднимает `api` и `frontend`. Модели, reports и configs 
+не входят в images и должны быть загружены на сервер в bind mount директории `artifacts`, `reports` и `configs`.
 
 Основные endpoints:
 
@@ -367,7 +401,8 @@ JWT_SECRET=change-me
 | `DELETE` | `/history` | Очистка истории |
 | `GET` | `/stats` | Статистика запросов и времени обработки |
 
-`/forward` и `/health` доступны без авторизации. `/model-info`, `/history`, `DELETE /history` и `/stats` требуют JWT в header:
+`/forward` и `/health` доступны без авторизации. 
+`/model-info`, `/history`, `DELETE /history` и `/stats` требуют JWT в header:
 
 ```text
 Authorization: Bearer <access_token>
@@ -397,7 +432,8 @@ curl -X POST http://127.0.0.1:8000/forward \
   }'
 ```
 
-Для many-to-many LSTM нужно больше `window_size` событий в одном блоке, иначе сервис вернёт ошибку inference. Для проверки удобно отправлять несколько десятков реальных строк одного `block_id` из `data/HDFS.log`.
+Для many-to-many LSTM нужно больше `window_size` событий в одном блоке, иначе сервис вернёт ошибку inference. 
+Для проверки удобно отправлять несколько десятков реальных строк одного `block_id` из `data/HDFS.log`.
 
 Пример успешного ответа:
 
@@ -472,9 +508,11 @@ nll_max   # самый неожиданный переход в блоке
 | Many-to-many LSTM | baseline + `nll_max` | 0.887 | 0.963 | 0.823 | 0.0043 | 0.951 |
 | Many-to-many LSTM | best architecture + `nll_max` | 0.911 | 0.966 | 0.863 | 0.0041 | 0.975 |
 
-Табличные supervised-модели дают очень высокое качество, но это не полностью production-like сценарий: модель видит весь блок целиком. Последовательные модели важнее для сценария, где события поступают по порядку.
+Табличные supervised-модели дают очень высокое качество, но это не полностью production-like сценарий: 
+модель видит весь блок целиком. Последовательные модели важнее для сценария, где события поступают по порядку.
 
-Ключевой итог проекта: many-to-many LSTM с `nll_max` scoring даёт сильный sequence-based результат и существенно снижает FPR относительно one-step baseline.
+Ключевой итог проекта: many-to-many LSTM с `nll_max` scoring даёт сильный sequence-based результат и существенно 
+снижает FPR относительно one-step baseline.
 
 Подробнее про структуру результатов см. [reports/README.md](reports/README.md).
 
