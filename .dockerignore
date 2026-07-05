@@ -1,16 +1,60 @@
+# Git and local environment files
 .git
+.github
+.env
+.env.*
+
+# Virtual environments and package/cache directories
 .venv
-__pycache__
-*.pyc
-.ipynb_checkpoints
-
-data
-artifacts
-reports
-
-.DS_Store
-.idea
+venv
+env
+ENV
+.cache
+.uv-cache
+.uv
 .pytest_cache
 .ruff_cache
 .mypy_cache
-.uv-cache
+
+# Python bytecode and build artifacts
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+build
+dist
+*.egg-info
+.eggs
+*.egg
+
+# Project data and generated outputs
+data
+artifacts
+reports
+notebooks
+examples
+
+# Runtime files
+*.log
+*.pid
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Test and coverage outputs
+.coverage
+.coverage.*
+htmlcov
+coverage.xml
+junit.xml
+test-results
+
+# IDE and OS files
+.DS_Store
+.idea
+.vscode
+
+# Deployment files are not needed in runtime images
+deploy
