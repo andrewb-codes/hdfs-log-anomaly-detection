@@ -15,7 +15,6 @@
           - ca-certificates
           - curl
           - gnupg
-          - awscli
         state: present
         update_cache: true
 
@@ -109,9 +108,15 @@
     - name: Sync runtime files from S3
       ansible.builtin.command:
         cmd: >
-          aws --endpoint-url {{ s3_endpoint_url }}
+          docker run --rm
+          -e AWS_ACCESS_KEY_ID
+          -e AWS_SECRET_ACCESS_KEY
+          -e AWS_DEFAULT_REGION
+          -v {{ app_dir }}/{{ item }}:/data
+          amazon/aws-cli:2
+          --endpoint-url {{ s3_endpoint_url }}
           s3 sync s3://{{ s3_bucket }}/{{ s3_prefix }}/{{ item }}/
-          {{ app_dir }}/{{ item }}/
+          /data/
       environment:
         AWS_ACCESS_KEY_ID: "{{ s3_access_key_id }}"
         AWS_SECRET_ACCESS_KEY: "{{ s3_secret_access_key }}"

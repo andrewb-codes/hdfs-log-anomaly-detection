@@ -19,9 +19,10 @@ FastAPI остается только во внутренней Docker-сети 
   `group_vars/portfolio/vault.yml` и зашифровать через Ansible Vault.
 - `templates/env.j2` — шаблон production `.env`.
 - `templates/docker-compose.prod.yml.j2` — шаблон production compose-файла.
-- `playbook.yml` — устанавливает Docker и AWS CLI, создает общую Docker-сеть `web`, рендерит
+- `playbook.yml` — устанавливает Docker, создает общую Docker-сеть `web`, рендерит
   `.env` и compose-файл, скачивает runtime-файлы из S3, подтягивает images, запускает Alembic
-  миграции и поднимает сервисы.
+  миграции и поднимает сервисы. Runtime-файлы из S3 скачиваются через одноразовый контейнер
+  `amazon/aws-cli:2`, поэтому AWS CLI не нужно устанавливать на VPS как системный пакет.
 
 ## Docker Images
 
