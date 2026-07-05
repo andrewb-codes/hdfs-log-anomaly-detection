@@ -19,8 +19,9 @@ FastAPI остается только во внутренней Docker-сети 
   `group_vars/portfolio/vault.yml` и зашифровать через Ansible Vault.
 - `templates/env.j2` — шаблон production `.env`.
 - `templates/docker-compose.prod.yml.j2` — шаблон production compose-файла.
-- `playbook.yml` — устанавливает Docker, создает общую Docker-сеть `web`, рендерит `.env` и
-  compose-файл, подтягивает images, запускает Alembic миграции и поднимает сервисы.
+- `playbook.yml` — устанавливает Docker и AWS CLI, создает общую Docker-сеть `web`, рендерит
+  `.env` и compose-файл, скачивает runtime-файлы из S3, подтягивает images, запускает Alembic
+  миграции и поднимает сервисы.
 
 ## Docker Images
 
@@ -36,9 +37,27 @@ app_image_tag: main
 `main` и commit SHA, а затем запускает playbook с тегом текущего коммита. VPS получает готовые
 images через `docker compose pull`.
 
-## Данные И Артефакты
+## Данные и артефакты
 
-Images не содержат модели, reports и configs. На VPS должны существовать bind mount директории:
+Images не содержат модели, reports и configs. Runtime-файлы хранятся в Selectel S3:
+
+```yaml
+s3_endpoint_url: https://s3.ru-7.storage.selcloud.ru
+s3_region: ru-7
+s3_bucket: hdfs-anomaly-artifacts-prod
+s3_prefix: prod
+```
+
+В bucket ожидается структура:
+
+```text
+s3://hdfs-anomaly-artifacts-prod/prod/artifacts/...
+s3://hdfs-anomaly-artifacts-prod/prod/reports/...
+s3://hdfs-anomaly-artifacts-prod/prod/configs/...
+```
+
+Playbook скачивает эти директории на VPS перед миграциями и стартом API. На сервере они
+раскладываются в bind mount директории:
 
 ```text
 /opt/apps/hdfs-anomaly/artifacts
@@ -46,8 +65,8 @@ Images не содержат модели, reports и configs. На VPS долж
 /opt/apps/hdfs-anomaly/configs
 ```
 
-Playbook создает эти директории, но содержимое нужно загрузить отдельно. В них должны быть файлы,
-на которые ссылается `configs/api.yaml`: checkpoint модели, Drain transformer и таблица threshold.
+В S3 должны быть файлы, на которые ссылается `configs/api.yaml`: checkpoint модели, Drain
+transformer и таблица threshold.
 
 ## Автоматический Деплой Из GitHub Actions
 
@@ -67,6 +86,8 @@ VPS_SSH_KEY
 ADMIN_USERNAME
 ADMIN_PASSWORD
 JWT_SECRET
+S3_ACCESS_KEY_ID
+S3_SECRET_ACCESS_KEY
 ```
 
 `VPS_SSH_KEY` — приватный SSH-ключ, которым GitHub Actions подключается к VPS. Публичная часть
@@ -116,6 +137,16 @@ docker compose -f docker-compose.prod.yml logs -f frontend
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml run --rm api alembic current
 docker compose -f docker-compose.prod.yml run --rm api alembic upgrade head
+```
+
+Ручная проверка доступа к S3 на VPS:
+
+```bash
+AWS_ACCESS_KEY_ID=<access-key> \
+AWS_SECRET_ACCESS_KEY=<secret-key> \
+AWS_DEFAULT_REGION=ru-7 \
+aws --endpoint-url https://s3.ru-7.storage.selcloud.ru \
+  s3 ls --recursive s3://hdfs-anomaly-artifacts-prod/prod/
 ```
 
 ## Caddy И Общая Docker-Сеть

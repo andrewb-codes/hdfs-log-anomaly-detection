@@ -22,8 +22,8 @@ Anomaly detection in HDFS logs using tabular ML, LSTM sequence models, and a Fas
 резкими нарушениями нормального порядка событий.
 
 Репозиторий демонстрирует полный ML workflow: EDA, feature engineering, baseline-модели, sequence-модели, 
-подбор anomaly scoring, воспроизводимые YAML-конфиги, сохранение reports/artifacts и FastAPI-сервис для 
-inference по raw log lines.
+подбор anomaly scoring, воспроизводимые YAML-конфиги, сохранение reports/artifacts, FastAPI-сервис для 
+inference по raw log lines и Streamlit-интерфейс для ручной проверки модели.
 
 ## Что сделано
 
@@ -34,8 +34,13 @@ inference по raw log lines.
 - Many-to-many LSTM: предсказание следующего события для каждой позиции внутри окна.
 - Сравнение anomaly scoring strategies: `topk_last`, `topk_all`, `topk_last3`, `nll_mean`, `nll_p95`, `nll_max`.
 - Эксперименты с архитектурой LSTM.
-- FastAPI-сервис для inference по raw HDFS log lines с сохранением истории запросов в SQLite.
+- FastAPI-сервис для inference по raw HDFS log lines, JWT-авторизацией admin endpoints и историей запросов в SQLite.
+- Alembic-миграции для служебной базы API, которые запускаются отдельной командой.
 - Streamlit-фронтенд для запуска inference и просмотра служебных endpoints.
+- Раздельные Docker images для API и Streamlit frontend с отдельными runtime-зависимостями.
+- Docker Compose запуск с mounted `artifacts`, `reports` и `configs`, без вшивания моделей в images.
+- CI/CD через GitHub Actions: lint/type checks, сборка двух images, публикация в GHCR и deploy на VPS.
+- Production deploy через Ansible с синхронизацией runtime-файлов из Selectel S3.
 
 ## Стек
 
@@ -386,8 +391,25 @@ Docker image (`api` и `frontend`) и публикует их в GHCR при pus
 
 Production deploy описан в [deploy/ansible/README.md](deploy/ansible/README.md). 
 Ansible playbook подтягивает готовые images на VPS, рендерит `.env` и `docker-compose.prod.yml`, 
-отдельно запускает Alembic миграции, а затем поднимает `api` и `frontend`. Модели, reports и configs 
-не входят в images и должны быть загружены на сервер в bind mount директории `artifacts`, `reports` и `configs`.
+скачивает runtime-файлы из Selectel S3, отдельно запускает Alembic миграции, а затем поднимает 
+`api` и `frontend`. Модели, reports и configs не входят в images: они хранятся в bucket 
+`hdfs-anomaly-artifacts-prod` под prefix `prod/` и синхронизируются на VPS в bind mount директории 
+`artifacts`, `reports` и `configs`.
+
+Ожидаемая структура runtime-файлов в S3:
+
+```text
+s3://hdfs-anomaly-artifacts-prod/prod/artifacts/...
+s3://hdfs-anomaly-artifacts-prod/prod/reports/...
+s3://hdfs-anomaly-artifacts-prod/prod/configs/...
+```
+
+Для текущего `configs/api.yaml` в S3 должны быть checkpoint модели, Drain transformer и таблица threshold, 
+на которые ссылается конфиг. Локально проверить содержимое bucket можно так:
+
+```bash
+aws --profile hdfs-anomaly s3 ls --recursive s3://hdfs-anomaly-artifacts-prod/prod/
+```
 
 Основные endpoints:
 

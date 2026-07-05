@@ -10,6 +10,11 @@ frontend_image_ref: "{{ frontend_image }}:{{ app_image_tag }}"
 docker_public_network: web
 frontend_network_alias: hdfs-anomaly-frontend
 
+s3_endpoint_url: https://s3.ru-7.storage.selcloud.ru
+s3_region: ru-7
+s3_bucket: hdfs-anomaly-artifacts-prod
+s3_prefix: prod
+
 app_env:
   ADMIN_USERNAME: "{{ admin_username }}"
   ADMIN_PASSWORD: "{{ admin_password }}"

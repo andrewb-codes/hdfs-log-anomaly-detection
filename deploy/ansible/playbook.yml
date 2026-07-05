@@ -15,6 +15,7 @@
           - ca-certificates
           - curl
           - gnupg
+          - awscli
         state: present
         update_cache: true
 
@@ -104,6 +105,22 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: "0644"
+
+    - name: Sync runtime files from S3
+      ansible.builtin.command:
+        cmd: >
+          aws --endpoint-url {{ s3_endpoint_url }}
+          s3 sync s3://{{ s3_bucket }}/{{ s3_prefix }}/{{ item }}/
+          {{ app_dir }}/{{ item }}/
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ s3_access_key_id }}"
+        AWS_SECRET_ACCESS_KEY: "{{ s3_secret_access_key }}"
+        AWS_DEFAULT_REGION: "{{ s3_region }}"
+      loop:
+        - artifacts
+        - reports
+        - configs
+      changed_when: true
 
     - name: Pull application images
       ansible.builtin.command:
