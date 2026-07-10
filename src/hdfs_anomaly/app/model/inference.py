@@ -2,13 +2,13 @@ import numpy as np
 import pandas as pd
 import torch
 
-from hdfs_anomaly.api.resources import InferenceResources
-from hdfs_anomaly.api.schemas import ForwardRequest, ForwardResponse
+from hdfs_anomaly.app.model.resources import InferenceResources
+from hdfs_anomaly.app.schemas.model import PredictRequest, PredictResponse
 from hdfs_anomaly.metrics.lstm_many_to_many import batch_strategy_scores
 from hdfs_anomaly.sequences.windows import make_lstm_windows
 
 
-def parse_log_lines(request: ForwardRequest, resources: InferenceResources) -> list[int]:
+def parse_log_lines(request: PredictRequest, resources: InferenceResources) -> list[int]:
     """Parse raw HDFS log lines into the internal EventId sequence for the requested block."""
     raw_logs = pd.DataFrame({"original_message": request.log_lines})
     sequences = resources.transformer.transform(raw_logs)
@@ -70,7 +70,7 @@ def score_windows(
     return block_score, window_scores
 
 
-def run_inference(request: ForwardRequest, resources: InferenceResources) -> ForwardResponse:
+def run_inference(request: PredictRequest, resources: InferenceResources) -> PredictResponse:
     """Run the full raw-log to block-level anomaly decision pipeline."""
     sequence = parse_log_lines(request, resources)
     windows = make_inference_windows(
@@ -82,7 +82,7 @@ def run_inference(request: ForwardRequest, resources: InferenceResources) -> For
     score, window_scores = score_windows(windows, resources)
     is_anomaly = score >= resources.threshold
 
-    return ForwardResponse(
+    return PredictResponse(
         block_id=request.block_id,
         score=score,
         threshold=resources.threshold,
