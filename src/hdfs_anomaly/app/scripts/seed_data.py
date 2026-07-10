@@ -24,9 +24,7 @@ async def seed_admin(repository: ProfileRepository) -> None:
 
     if existing is not None:
         if existing.role != Role.ADMIN:
-            raise RuntimeError(
-                f"Profile {normalized_email} exists but is not an admin"
-            )
+            raise RuntimeError(f"Profile {normalized_email} exists but is not an admin")
         return
 
     repository.session.add(
@@ -37,12 +35,12 @@ async def seed_admin(repository: ProfileRepository) -> None:
             role=Role.ADMIN,
         )
     )
-    
-    
+
+
 async def seed_demo_user(repository: ProfileRepository) -> None:
     if not settings.demo_user_enabled:
         return
-    
+
     email = settings.demo_email
     password = settings.demo_password
 
@@ -50,7 +48,7 @@ async def seed_demo_user(repository: ProfileRepository) -> None:
         raise RuntimeError("DEMO_EMAIL and DEMO_PASSWORD are required when demo user is enabled")
 
     normalized_email = email.strip().lower()
-    
+
     if await repository.exists_by_email(email=normalized_email):
         return
 
