@@ -13,14 +13,14 @@ COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-group notebooks --extra api --no-install-project
 
+COPY alembic.ini ./
+COPY alembic ./alembic
 COPY src ./src
 COPY configs ./configs
-COPY alembic.ini .
-COPY migrations ./migrations
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-group notebooks --extra api
 
 EXPOSE 8000
 
-CMD ["uvicorn", "hdfs_anomaly.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "hdfs_anomaly.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

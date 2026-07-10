@@ -20,4 +20,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "src/hdfs_anomaly/frontend/app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+CMD ["streamlit", "run", "src/hdfs_anomaly/frontend/main.py", "--server.address", "0.0.0.0", "--server.port", "8501"]

@@ -14,7 +14,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--api-url",
-        default="http://127.0.0.1:8000/forward",
+        default="http://127.0.0.1:8000/api/v1/model/predict",
         help="FastAPI /forward URL.",
     )
     parser.add_argument(
