@@ -1,4 +1,4 @@
-- name: Deploy HDFS Anomaly Detection
+- name: Deploy HDFS Log Anomaly Detection
   hosts: portfolio
   become: true
 
@@ -138,6 +138,12 @@
     - name: Run Alembic migrations
       ansible.builtin.command:
         cmd: docker compose -f docker-compose.prod.yml run --rm api alembic upgrade head
+        chdir: "{{ app_dir }}"
+      changed_when: true
+
+    - name: Seed application data
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.prod.yml run --rm api python -m hdfs_anomaly.app.scripts.seed_data
         chdir: "{{ app_dir }}"
       changed_when: true
 

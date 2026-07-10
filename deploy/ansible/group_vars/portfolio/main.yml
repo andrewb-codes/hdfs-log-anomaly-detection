@@ -16,6 +16,16 @@ s3_bucket: hdfs-anomaly-artifacts-prod
 s3_prefix: prod
 
 app_env:
-  ADMIN_USERNAME: "{{ admin_username }}"
-  ADMIN_PASSWORD: "{{ admin_password }}"
+  DATABASE_URL: postgresql+asyncpg://anomaly_user:{{ postgres_password | urlencode }}@postgres:5432/anomaly
   JWT_SECRET: "{{ jwt_secret }}"
+  POSTGRES_DB: anomaly
+  POSTGRES_USER: anomaly_user
+  POSTGRES_PASSWORD: "{{ postgres_password }}"
+
+  BOOTSTRAP_ADMIN_ENABLED: "true"
+  BOOTSTRAP_ADMIN_EMAIL: admin@example.com
+  BOOTSTRAP_ADMIN_PASSWORD: "{{ bootstrap_admin_password }}"
+
+  DEMO_USER_ENABLED: "true"
+  DEMO_EMAIL: demo@example.com
+  DEMO_PASSWORD: "{{ demo_password }}"
