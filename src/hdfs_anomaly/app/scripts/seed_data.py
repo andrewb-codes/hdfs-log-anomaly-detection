@@ -27,14 +27,14 @@ async def seed_admin(repository: ProfileRepository) -> None:
             raise RuntimeError(f"Profile {normalized_email} exists but is not an admin")
         return
 
-    repository.session.add(
-        Profile(
+    profile = Profile(
             email=normalized_email,
             password=hash_password(password),
             status=Status.ACTIVE,
             role=Role.ADMIN,
         )
-    )
+
+    repository.session.add(profile)
 
 
 async def seed_demo_user(repository: ProfileRepository) -> None:
