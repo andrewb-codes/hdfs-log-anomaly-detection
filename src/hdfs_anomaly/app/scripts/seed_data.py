@@ -28,11 +28,11 @@ async def seed_admin(repository: ProfileRepository) -> None:
         return
 
     profile = Profile(
-            email=normalized_email,
-            password=hash_password(password),
-            status=Status.ACTIVE,
-            role=Role.ADMIN,
-        )
+        email=normalized_email,
+        password=hash_password(password),
+        status=Status.ACTIVE,
+        role=Role.ADMIN,
+    )
 
     repository.session.add(profile)
 
