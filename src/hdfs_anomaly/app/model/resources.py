@@ -9,7 +9,7 @@ import torch
 from hdfs_anomaly.models.lstm_many_to_many import ManyToManyLSTMModel
 from hdfs_anomaly.utils.experiment import load_config, resolve_project_path
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 
 
 @dataclass
