@@ -1,33 +1,26 @@
 # Деплой через Ansible
 
-Этот сценарий деплоит HDFS Log Anomaly Detection на один Ubuntu/Debian VPS через Docker Compose.
-Сервер не билдит приложение из исходников: playbook подтягивает готовые Docker images из GHCR.
+Playbook деплоит приложение на один Ubuntu/Debian VPS. Сервер загружает готовые 
+API/frontend images из GHCR и запускает три сервиса через Docker Compose:
 
-Production compose запускает два контейнера:
+- `postgres` — PostgreSQL 17 с volume `hdfs_anomaly_data`;
+- `api` — FastAPI во внутренней сети;
+- `frontend` — Streamlit во внутренней сети и общей external-сети `web`.
 
-- `api` — FastAPI inference service из `Dockerfile.api`;
-- `frontend` — Streamlit UI из `Dockerfile.frontend`.
+Streamlit обращается к API по адресу `http://api:8000`. 
+Reverse proxy обращается к frontend по alias `hdfs-anomaly-frontend:8501`. 
+API и PostgreSQL снаружи не публикуются.
 
-FastAPI остается только во внутренней Docker-сети проекта. Streamlit обращается к нему по адресу
-`http://api:8000`. Наружу через общую Docker-сеть `web` подключается только frontend.
+## Конфигурация
 
-## Файлы
+- `inventory.ini.example` — пример inventory;
+- `group_vars/portfolio/main.yml` — несекретные переменные;
+- `group_vars/portfolio/vault.yml.example` — шаблон секретов;
+- `templates/env.j2` — production `.env`;
+- `templates/docker-compose.prod.yml.j2` — production Compose;
+- `playbook.yml` — установка Docker, миграции, seed и запуск сервисов.
 
-- `inventory.ini.example` — пример inventory; скопировать в `inventory.ini` и указать адрес VPS.
-- `group_vars/portfolio/main.yml` — несекретные настройки деплоя для общего portfolio VPS.
-- `group_vars/portfolio/vault.yml.example` — пример секретов; скопировать в
-  `group_vars/portfolio/vault.yml` и зашифровать через Ansible Vault.
-- `templates/env.j2` — шаблон production `.env`.
-- `templates/docker-compose.prod.yml.j2` — шаблон production compose-файла.
-- `playbook.yml` — устанавливает Docker, создает общую Docker-сеть `web`, рендерит
-  `.env` и compose-файл, скачивает runtime-файлы из S3, подтягивает images, запускает Alembic
-  миграции и поднимает сервисы. Runtime-файлы из S3 скачиваются через одноразовый контейнер
-  `amazon/aws-cli:latest`, поэтому AWS CLI не нужно устанавливать на VPS как системный пакет.
-  В контейнер пробрасывается системный CA bundle VPS для проверки TLS-сертификата S3 endpoint.
-
-## Docker Images
-
-Production compose использует два image из `group_vars/portfolio/main.yml`:
+Production images:
 
 ```yaml
 api_image: ghcr.io/andrewb-codes/hdfs-log-anomaly-detection-api
@@ -35,22 +28,30 @@ frontend_image: ghcr.io/andrewb-codes/hdfs-log-anomaly-detection-frontend
 app_image_tag: main
 ```
 
-При автоматическом деплое GitHub Actions собирает оба image, публикует их в GHCR с тегами
-`main` и commit SHA, а затем запускает playbook с тегом текущего коммита. VPS получает готовые
-images через `docker compose pull`.
+Seed-скрипт создает включенные в `app_env` сущности:
 
-## Данные и артефакты
+- bootstrap admin из `BOOTSTRAP_ADMIN_*`;
+- demo-профиль из `DEMO_*`.
 
-Images не содержат модели, reports и configs. Runtime-файлы хранятся в Selectel S3:
+Пароли задаются через Ansible Vault или GitHub Secrets. Повторный seed не
+создает профили с уже существующими email. Если email bootstrap admin занят
+профилем без роли `ADMIN`, deploy завершается с ошибкой.
 
-```yaml
-s3_endpoint_url: https://s3.ru-7.storage.selcloud.ru
-s3_region: ru-7
-s3_bucket: hdfs-anomaly-artifacts-prod
-s3_prefix: prod
-```
+## Что делает playbook
 
-В bucket ожидается структура:
+1. Устанавливает Docker Engine и Compose plugin.
+2. Создаёт external-сеть `web` и каталог `/opt/apps/hdfs-anomaly`.
+3. Рендерит production `.env` и `docker-compose.prod.yml`.
+4. Синхронизирует `artifacts/`, `reports/` и `configs/` из Selectel S3.
+5. Загружает images, запускает Alembic-миграции и seed admin/demo-профилей.
+6. Поднимает API и frontend.
+
+Основные настройки находятся в `group_vars/portfolio/main.yml`, 
+секреты — в зашифрованном `group_vars/portfolio/vault.yml`.
+
+## Runtime-файлы
+
+В S3 ожидается следующая структура:
 
 ```text
 s3://hdfs-anomaly-artifacts-prod/prod/artifacts/...
@@ -58,118 +59,103 @@ s3://hdfs-anomaly-artifacts-prod/prod/reports/...
 s3://hdfs-anomaly-artifacts-prod/prod/configs/...
 ```
 
-Playbook скачивает эти директории на VPS перед миграциями и стартом API. На сервере они
-раскладываются в bind mount директории:
+В ней должны присутствовать checkpoint, Drain transformer и threshold, указанные в
+`configs/api.yaml`. На VPS файлы синхронизируются в
+`/opt/apps/hdfs-anomaly/{artifacts,reports,configs}`.
 
-```text
-/opt/apps/hdfs-anomaly/artifacts
-/opt/apps/hdfs-anomaly/reports
-/opt/apps/hdfs-anomaly/configs
-```
+## Автоматический деплой
 
-В S3 должны быть файлы, на которые ссылается `configs/api.yaml`: checkpoint модели, Drain
-transformer и таблица threshold.
+Workflow `.github/workflows/ci.yml` запускает deploy после успешных проверок 
+при push в `main`. Images публикуются с тегами `main` и commit SHA.
 
-## Автоматический Деплой Из GitHub Actions
-
-Workflow `.github/workflows/ci.yml` запускает деплой после успешных проверок только при push в `main`.
-
-Нужно добавить GitHub Variables:
+GitHub Variables:
 
 ```text
 VPS_HOST
 VPS_USER
 ```
 
-И GitHub Secrets:
+GitHub Secrets:
 
 ```text
 VPS_SSH_KEY
-ADMIN_USERNAME
-ADMIN_PASSWORD
+POSTGRES_PASSWORD
 JWT_SECRET
 S3_ACCESS_KEY_ID
 S3_SECRET_ACCESS_KEY
+BOOTSTRAP_ADMIN_PASSWORD
+DEMO_PASSWORD
 ```
 
-`VPS_SSH_KEY` — приватный SSH-ключ, которым GitHub Actions подключается к VPS. Публичная часть
-ключа должна быть добавлена на сервер в `~/.ssh/authorized_keys` для пользователя `VPS_USER`.
+Публичная часть `VPS_SSH_KEY` должна находиться в `~/.ssh/authorized_keys` 
+пользователя `VPS_USER`.
 
-## Ручной Запуск Без GitHub Actions
-
-Перед ручным запуском нужные images уже должны быть опубликованы в GHCR. Обычно это делает GitHub
-Actions после push в `main`.
+## Ручной запуск
 
 ```bash
 cd deploy/ansible
 cp inventory.ini.example inventory.ini
 cp group_vars/portfolio/vault.yml.example group_vars/portfolio/vault.yml
+
+# Заполнить inventory и vault.yml, затем:
 ansible-vault encrypt group_vars/portfolio/vault.yml
 ansible-playbook playbook.yml --ask-vault-pass
 ```
 
-Чтобы не вводить пароль Vault вручную при каждом запуске, можно хранить его вне репозитория:
+Для запуска без интерактивного ввода создайте файл с паролем Vault вне
+репозитория:
 
 ```bash
 mkdir -p ~/.ansible
 nano ~/.ansible/hdfs-anomaly-vault-pass
 chmod 600 ~/.ansible/hdfs-anomaly-vault-pass
+ansible-playbook playbook.yml \
+  --vault-password-file ~/.ansible/hdfs-anomaly-vault-pass
 ```
 
-В файле `~/.ansible/hdfs-anomaly-vault-pass` должна быть одна строка: пароль от Ansible Vault без
-кавычек. Проверить расшифровку:
+Ожидаемые поля Vault перечислены в `vault.yml.example`. Application images 
+должны быть заранее опубликованы в GHCR.
 
-```bash
-ansible-vault view group_vars/portfolio/vault.yml --vault-password-file ~/.ansible/hdfs-anomaly-vault-pass
-```
-
-Запуск playbook с файлом пароля:
-
-```bash
-ansible-playbook playbook.yml --vault-password-file ~/.ansible/hdfs-anomaly-vault-pass
-```
-
-## Полезные Команды На VPS
+## Диагностика
 
 ```bash
 cd /opt/apps/hdfs-anomaly
 docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs -f api
 docker compose -f docker-compose.prod.yml logs -f frontend
-docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml logs -f postgres
 docker compose -f docker-compose.prod.yml run --rm api alembic current
 docker compose -f docker-compose.prod.yml run --rm api alembic upgrade head
+docker compose -f docker-compose.prod.yml run --rm api python -m hdfs_anomaly.app.scripts.seed_data
 ```
 
-Ручная проверка доступа к S3 на VPS:
+## Ротация пароля PostgreSQL
+
+`POSTGRES_PASSWORD` применяется только при первичной инициализации пустого volume. 
+Для существующей БД сначала измените пароль роли:
 
 ```bash
-AWS_ACCESS_KEY_ID=<access-key> \
-AWS_SECRET_ACCESS_KEY=<secret-key> \
-AWS_DEFAULT_REGION=ru-7 \
-aws --endpoint-url https://s3.ru-7.storage.selcloud.ru \
-  s3 ls --recursive s3://hdfs-anomaly-artifacts-prod/prod/
+cd /opt/apps/hdfs-anomaly
+docker compose -f docker-compose.prod.yml exec postgres \
+  psql -U anomaly_user -d anomaly
 ```
 
-## Caddy И Общая Docker-Сеть
+В `psql`:
 
-Playbook создает external Docker network `web`. Это общая сеть для reverse proxy и всех публичных
-приложений на VPS.
+```text
+\password anomaly_user
+\q
+```
 
-HDFS Anomaly Detection подключает к этой сети только публичный frontend:
+Затем обновите `postgres_password` в Ansible Vault или `POSTGRES_PASSWORD` в GitHub
+Secrets и повторите deploy. Удаление `hdfs_anomaly_data` приводит к потере данных. 
 
-- `hdfs-anomaly-frontend` — Streamlit на порту `8501`.
+## Caddy
 
-FastAPI к `web` не подключается и остается только во внутренней `default`-сети проекта.
-Streamlit ходит в API внутри этой сети по адресу `http://api:8000`.
-
-Пример Caddyfile для отдельного proxy compose-проекта:
+Пример конфигурации для reverse proxy, подключённого к сети `web`:
 
 ```caddyfile
 hdfs-anomaly.example.com {
   reverse_proxy hdfs-anomaly-frontend:8501
 }
 ```
-
-Когда на сервер добавятся другие приложения, они тоже должны подключать свои публичные сервисы к
-сети `web` со своими alias-ами, например `rag-frontend` или `admin-frontend`.
