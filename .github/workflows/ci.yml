@@ -41,7 +41,7 @@ jobs:
     needs: checks
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     concurrency:
-      group: production-deploy
+      group: anomaly-production-deploy
       cancel-in-progress: false
 
     env:
