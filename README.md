@@ -9,7 +9,7 @@ Streamlit-интерфейс.
 Публичный frontend на production-сервере открывается через домен, настроенный в Caddy:
 
 ```text
-https://<demo-domain>
+https://anomaly.andrewb.ru
 ```
 
 ```text
