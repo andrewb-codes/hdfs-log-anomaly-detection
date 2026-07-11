@@ -65,7 +65,7 @@ s3://hdfs-anomaly-artifacts-prod/prod/configs/...
 
 ## Автоматический деплой
 
-Workflow `.github/workflows/ci.yml` запускает deploy после успешных проверок 
+Workflow `.github/workflows/ci-cd.yml` запускает deploy после успешных проверок 
 при push в `main`. Images публикуются с тегами `main` и commit SHA.
 
 GitHub Variables:
