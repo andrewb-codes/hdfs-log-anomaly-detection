@@ -64,6 +64,11 @@
         enabled: true
         state: started
 
+    - name: Prune unused Docker data before deployment
+      ansible.builtin.command:
+        cmd: docker system prune -af
+      changed_when: false
+
     - name: Create public Docker network for reverse proxy
       ansible.builtin.command:
         cmd: docker network create {{ docker_public_network }}
@@ -165,6 +170,11 @@
         cmd: docker compose -f docker-compose.prod.yml up -d api frontend
         chdir: "{{ app_dir }}"
       changed_when: true
+
+    - name: Prune replaced Docker data after deployment
+      ansible.builtin.command:
+        cmd: docker system prune -af
+      changed_when: false
 
     - name: Show service status
       ansible.builtin.command:
