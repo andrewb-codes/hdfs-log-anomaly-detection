@@ -5,7 +5,7 @@ from hdfs_anomaly.app.frontend.core.session import login
 
 
 def render_auth() -> None:
-    _, content, _ = st.columns([1, 1, 1])
+    _, content, _ = st.columns([1, 1.8, 1])
 
     with content:
         st.title("HDFS Log Anomaly Detection")
