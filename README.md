@@ -125,6 +125,11 @@ cp .env.example .env
 Bootstrap admin и demo users управляются группами переменных `BOOTSTRAP_ADMIN_*`, `DEMO_*`.
 В production значения задаются через Ansible Vault или GitHub Secrets.
 
+API, Streamlit frontend и Alembic читают `.env` по умолчанию. Для другого файла окружения
+задайте `ENV_FILE`, например `ENV_FILE=.env.test uv run alembic upgrade head`.
+`STREAMLIT_API_URL` нужен при запуске frontend вне Docker Compose; в Compose frontend
+получает внутренний адрес API `http://api:8000` из `docker-compose.yml`.
+
 Первый запуск:
 
 ```bash

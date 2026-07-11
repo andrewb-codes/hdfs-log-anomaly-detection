@@ -3,6 +3,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
@@ -10,12 +11,23 @@ from hdfs_anomaly.app.db.base import Base
 from hdfs_anomaly.app.models.history import RequestHistory  # noqa: F401
 from hdfs_anomaly.app.models.profile import Profile  # noqa: F401
 
+
+class AlembicSettings(BaseSettings):
+    database_url: str
+
+    model_config = SettingsConfigDict(
+        env_file=os.getenv("ENV_FILE", ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-database_url = os.environ["DATABASE_URL"]
+database_url = AlembicSettings().database_url
 config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
