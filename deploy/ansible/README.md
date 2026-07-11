@@ -113,7 +113,7 @@ ansible-playbook playbook.yml \
   --vault-password-file ~/.ansible/hdfs-anomaly-vault-pass
 ```
 
-Ожидаемые поля Vault перечислены в `vault.yml.example`. Application images 
+Ожидаемые поля Vault перечислены в `vault.yml.example`. Application images
 должны быть заранее опубликованы в GHCR.
 
 ## Диагностика
@@ -131,7 +131,7 @@ docker compose -f docker-compose.prod.yml run --rm api python -m hdfs_anomaly.ap
 
 ## Ротация пароля PostgreSQL
 
-`POSTGRES_PASSWORD` применяется только при первичной инициализации пустого volume. 
+`POSTGRES_PASSWORD` применяется только при первичной инициализации пустого volume.
 Для существующей БД сначала измените пароль роли:
 
 ```bash

@@ -1,4 +1,4 @@
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 ENV UV_LINK_MODE=copy
 WORKDIR /app
@@ -11,21 +11,20 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY src ./src
 
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-group notebooks --extra frontend
 
-
-FROM python:3.12-slim as runtime
+FROM python:3.12-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH="/app/src"
 ENV PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
 COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/src /app/src
+COPY --from=builder /app/src/hdfs_anomaly/app/__init__.py /app/src/hdfs_anomaly/app/__init__.py
+COPY --from=builder /app/src/hdfs_anomaly/app/frontend/ /app/src/hdfs_anomaly/app/frontend
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "src/hdfs_anomaly/frontend/main.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+CMD ["streamlit", "run", "src/hdfs_anomaly/app/frontend/main.py", "--server.address", "0.0.0.0", "--server.port", "8501"]

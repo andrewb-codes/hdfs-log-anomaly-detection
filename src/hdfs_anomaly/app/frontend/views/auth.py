@@ -1,7 +1,7 @@
 import streamlit as st
 
-from hdfs_anomaly.frontend.core.api import request, show_error
-from hdfs_anomaly.frontend.core.session import login
+from hdfs_anomaly.app.frontend.core.api import request, show_error
+from hdfs_anomaly.app.frontend.core.session import login
 
 
 def render_auth() -> None:

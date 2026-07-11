@@ -217,12 +217,13 @@ uv sync --all-extras --all-groups
 Основные директории:
 
 ```text
-src/hdfs_anomaly/app/api/          HTTP endpoints и зависимости
+src/hdfs_anomaly/app/api/          FastAPI entrypoint, endpoints и зависимости
 src/hdfs_anomaly/app/models/       SQLAlchemy-модели
 src/hdfs_anomaly/app/repositories/ запросы к БД
 src/hdfs_anomaly/app/services/     бизнес-логика
 src/hdfs_anomaly/app/model/        загрузка модели и inference
-src/hdfs_anomaly/frontend/         Streamlit-интерфейс
+src/hdfs_anomaly/app/scripts       seed и maintenance scripts
+src/hdfs_anomaly/app/frontend/     Streamlit-интерфейс
 src/hdfs_anomaly/parsing/          Drain3-парсинг
 src/hdfs_anomaly/sequences/        split и windowing
 src/hdfs_anomaly/models/           ML/LSTM-модели
@@ -246,7 +247,7 @@ uv run alembic upgrade head
 ```bash
 uv run ruff format --check .
 uv run ruff check .
-uv run mypy
+uv run mypy src
 ```
 
 CI выполняет эти проверки для push и pull request.

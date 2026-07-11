@@ -1,11 +1,11 @@
 import streamlit as st
 
-from hdfs_anomaly.frontend.core.session import load_profile, logout
-from hdfs_anomaly.frontend.views.admin import render_admin
-from hdfs_anomaly.frontend.views.auth import render_auth
-from hdfs_anomaly.frontend.views.history import render_history
-from hdfs_anomaly.frontend.views.predict import render_prediction
-from hdfs_anomaly.frontend.views.profile import render_profile
+from hdfs_anomaly.app.frontend.core.session import load_profile, logout
+from hdfs_anomaly.app.frontend.views.admin import render_admin
+from hdfs_anomaly.app.frontend.views.auth import render_auth
+from hdfs_anomaly.app.frontend.views.history import render_history
+from hdfs_anomaly.app.frontend.views.predict import render_prediction
+from hdfs_anomaly.app.frontend.views.profile import render_profile
 
 
 def render_app() -> None:

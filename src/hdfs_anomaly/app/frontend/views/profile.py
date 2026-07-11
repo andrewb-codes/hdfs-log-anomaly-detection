@@ -2,8 +2,8 @@ from typing import Any
 
 import streamlit as st
 
-from hdfs_anomaly.frontend.core.api import request, show_error
-from hdfs_anomaly.frontend.core.session import auth_token, logout
+from hdfs_anomaly.app.frontend.core.api import request, show_error
+from hdfs_anomaly.app.frontend.core.session import auth_token, logout
 
 
 def render_profile(profile: dict[str, Any]) -> None:

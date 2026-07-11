@@ -72,7 +72,7 @@ explicit = true
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "scripts"]
+src = ["src", "scripts", "alembic"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

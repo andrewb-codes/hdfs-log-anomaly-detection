@@ -2,7 +2,7 @@ from typing import Any, cast
 
 import streamlit as st
 
-from hdfs_anomaly.frontend.core.api import request, show_error
+from hdfs_anomaly.app.frontend.core.api import request, show_error
 
 
 def auth_token() -> str | None:

@@ -3,7 +3,7 @@ from typing import Any
 import httpx
 import streamlit as st
 
-from hdfs_anomaly.frontend.config import frontend_settings
+from hdfs_anomaly.app.frontend.core.config import frontend_settings
 
 API_URL = frontend_settings.streamlit_api_url.rstrip("/")
 
