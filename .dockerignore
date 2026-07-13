@@ -1,40 +1,59 @@
-# Git and local environment files
-.git
-.github
+# Git metadata and local environment files
+.git/
+.github/
+.gitignore
 .env
 .env.*
 
-# Virtual environments and package/cache directories
-.venv
-venv
-env
-ENV
-.cache
-.uv-cache
-.uv
-.pytest_cache
-.ruff_cache
-.mypy_cache
+# Virtual environments and dependency caches
+.venv/
+venv/
+env/
+ENV/
+.cache/
+.uv-cache/
+.uv/
 
-# Python bytecode and build artifacts
-__pycache__
+# Python bytecode and native extensions
+__pycache__/
 *.py[cod]
 *$py.class
 *.so
-build
-dist
-*.egg-info
-.eggs
+.Python
+
+# Packaging and build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
 *.egg
 
-# Project data and generated outputs
-data
-artifacts
-reports
-notebooks
-examples
+# Test, lint, type-check, and coverage outputs
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+junit.xml
+test-results/
 
-# Runtime files
+# Jupyter and IPython state
+notebooks/
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# IDE, editor, and OS files
+.idea/
+.vscode/
+.DS_Store
+tempCodeRunnerFile.py
+
+# Logs and local runtime storage
 *.log
 *.pid
 *.sqlite
@@ -42,19 +61,26 @@ examples
 *.db
 *.db-shm
 *.db-wal
+.matplotlib_cache/
 
-# Test and coverage outputs
-.coverage
-.coverage.*
-htmlcov
-coverage.xml
-junit.xml
-test-results
+# Project data and generated outputs
+data/
+artifacts/
+reports/
+examples/
 
-# IDE and OS files
-.DS_Store
-.idea
-.vscode
+# Model artifacts and large/raw tabular exports
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.joblib
+*.onnx
+*.bin
+*.parquet
+*.feather
+*.npz
+*.npy
 
 # Deployment files are not needed in runtime images
-deploy
+deploy/

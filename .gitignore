@@ -1,4 +1,4 @@
-# Python
+# Python bytecode and native extensions
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,14 +21,15 @@ dist/
 .eggs/
 *.egg
 
-# Test, lint, type-check, and coverage caches
+# Test, lint, type-check, and coverage outputs
 .cache/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.pyre/
+.hypothesis/
 .uv-cache/
 .uv/
-.pyre/
 .coverage
 .coverage.*
 htmlcov/
@@ -36,17 +37,18 @@ coverage.xml
 junit.xml
 test-results/
 
-# Jupyter/IPython
+# Jupyter and IPython state
 .ipynb_checkpoints/
 profile_default/
 ipython_config.py
 
-# IDE and OS files
+# IDE, editor, and OS files
 .idea/
 .vscode/
 .DS_Store
+tempCodeRunnerFile.py
 
-# Logs and local runtime files
+# Logs and local runtime storage
 *.log
 *.pid
 *.sqlite
@@ -54,11 +56,14 @@ ipython_config.py
 *.db
 *.db-shm
 *.db-wal
-tempCodeRunnerFile.py
 .matplotlib_cache/
 
+# Local Docker and Streamlit overrides
+docker-compose.override.yml
+.streamlit/secrets.toml
+
 # Project data
-# Keep README files as placeholders/documentation, but never commit LogHub data.
+# Keep placeholders/documentation, but never commit LogHub data.
 data/*
 !data/README.md
 !data/.gitkeep
