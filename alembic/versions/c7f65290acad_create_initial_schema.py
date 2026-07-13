@@ -44,7 +44,7 @@ def upgrade() -> None:
         "request_history",
         sa.Column("id", sa.BigInteger(), nullable=False),
         sa.Column("profile_id", sa.BigInteger(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("block_id", sa.String(), nullable=True),
         sa.Column("status_code", sa.Integer(), nullable=False),
         sa.Column("processing_ms", sa.Float(), nullable=False),

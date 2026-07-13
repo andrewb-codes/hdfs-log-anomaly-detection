@@ -248,12 +248,27 @@ uv run alembic upgrade head
 
 ## Тесты и проверки
 
+Тесты используют отдельную PostgreSQL-базу `anomaly_test` в том же
+PostgreSQL-контейнере. Не указывайте в `.env.test` основную БД `anomaly`:
+фикстуры тестов очищают таблицы перед каждым тестом. Пользователь, пароль и
+порт в `DATABASE_URL` из `.env.test` должны совпадать с `POSTGRES_USER`,
+`POSTGRES_PASSWORD` и `POSTGRES_PORT` в `.env`.
+
+```bash
+cp .env.test.example .env.test
+docker compose up -d postgres
+docker compose exec postgres psql -U anomaly_user -d anomaly \
+  -c "CREATE DATABASE anomaly_test;"
+ENV_FILE=.env.test uv run alembic upgrade head
+ENV_FILE=.env.test uv run pytest
+```
+
 Статические проверки:
 
 ```bash
 uv run ruff format --check .
 uv run ruff check .
-uv run mypy src
+uv run mypy src tests
 ```
 
 CI выполняет эти проверки для push и pull request.

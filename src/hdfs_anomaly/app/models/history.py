@@ -1,15 +1,10 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hdfs_anomaly.app.db.base import Base
 from hdfs_anomaly.app.models.profile import Profile
-
-
-def utc_now() -> datetime:
-    """Return the current UTC timestamp for history records."""
-    return datetime.now(UTC)
 
 
 class RequestHistory(Base):
@@ -24,7 +19,9 @@ class RequestHistory(Base):
     )
     profile: Mapped["Profile"] = relationship()
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
 
     block_id: Mapped[str | None] = mapped_column(String, nullable=True)
     status_code: Mapped[int] = mapped_column(Integer)
