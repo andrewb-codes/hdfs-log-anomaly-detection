@@ -145,9 +145,10 @@ docker compose up -d api frontend
 docker compose up --build -d
 ```
 
-Streamlit доступен по адресу `http://127.0.0.1:8501`. PostgreSQL публикуется на 
-порту `POSTGRES_PORT` и хранит данные в volume `hdfs_anomaly_data`. 
-API не публикуется на хост и доступен контейнерам Compose-сети по адресу `http://api:8000`.
+Streamlit доступен по адресу `http://127.0.0.1:8501`.
+
+API не публикуется на хост и доступен только внутри Compose-сети.
+PostgreSQL привязан к localhost на `POSTGRES_PORT` для локальной разработки.
 
 Остановка:
 
