@@ -27,7 +27,9 @@ api = [
     "torch==2.12.1",
     "uvicorn",
     "pwdlib[argon2]",
-    "email-validator"
+    "email-validator",
+    "limits[redis]",
+    "redis",
 ]
 
 frontend = [

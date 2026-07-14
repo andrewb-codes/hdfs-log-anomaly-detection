@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,6 +14,12 @@ class Settings(BaseSettings):
     jwt_secret: str
     jwt_algorithm: str = "HS256"
     jwt_ttl_minutes: int = 60
+
+    rate_limit_enabled: bool = True
+    rate_limit_redis_url: str | None = None
+    rate_limit_redis_implementation: Literal["redispy", "coredis", "valkey"] = "redispy"
+    rate_limit_key_prefix: str = "anomaly"
+    rate_limit_key_secret: str | None = None
 
     bootstrap_admin_enabled: bool = False
     bootstrap_admin_email: str | None = None

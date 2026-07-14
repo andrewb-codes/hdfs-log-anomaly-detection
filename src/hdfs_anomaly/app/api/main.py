@@ -14,26 +14,35 @@ from hdfs_anomaly.app.api.v1.registration import router as registration_router
 from hdfs_anomaly.app.core.config import settings
 from hdfs_anomaly.app.core.exceptions import AppError
 from hdfs_anomaly.app.model.resources import load_resources
+from hdfs_anomaly.app.rate_limit.service import RateLimitService
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """Load inference resources on application startup."""
     deps.resources = load_resources()
+
+    rate_limiter = RateLimitService.from_settings(settings)
+
+    if rate_limiter.enabled and not await rate_limiter.check_storage():
+        raise RuntimeError("Rate limit Redis storage is not available")
+
+    app.state.rate_limiter = rate_limiter
+
     try:
         yield
     finally:
         deps.resources = None
+        app.state.rate_limiter = None
 
 
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    lifespan=lifespan,
     description=(
         "REST API for HDFS Log Anomaly Detection Inference: "
         "authentication, profiles, predict, history, stats and admin profile management."
     ),
+    lifespan=lifespan,
 )
 
 if settings.cors_origins:
@@ -60,4 +69,11 @@ def health() -> dict:
 
 @app.exception_handler(AppError)
 async def app_error_handler(_: Request, exc: AppError) -> JSONResponse:
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    headers = None
+
+    if hasattr(exc, "retry_after"):
+        headers = {"Retry-After": str(exc.retry_after)}
+
+    return JSONResponse(
+        status_code=exc.status_code, content={"detail": exc.detail}, headers=headers
+    )
