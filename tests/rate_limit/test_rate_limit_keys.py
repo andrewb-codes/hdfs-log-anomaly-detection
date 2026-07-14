@@ -1,3 +1,5 @@
+import pytest
+
 from hdfs_anomaly.app.rate_limit.keys import (
     build_global_key,
     build_identifier_key,
@@ -6,6 +8,8 @@ from hdfs_anomaly.app.rate_limit.keys import (
     normalize_identifier,
 )
 from hdfs_anomaly.app.rate_limit.scopes import RateLimitScope
+
+pytestmark = pytest.mark.no_db
 
 
 def test_normalize_identifier_strips_and_lowercases() -> None:

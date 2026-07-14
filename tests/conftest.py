@@ -11,7 +11,10 @@ from hdfs_anomaly.app.db.session import AsyncSessionLocal
 
 
 @pytest.fixture(autouse=True)
-async def clean_db() -> None:
+async def clean_db(request: pytest.FixtureRequest) -> None:
+    if request.node.get_closest_marker("no_db"):
+        return
+
     async with AsyncSessionLocal() as session:
         await session.execute(
             text("TRUNCATE TABLE profile, request_history RESTART IDENTITY CASCADE")
