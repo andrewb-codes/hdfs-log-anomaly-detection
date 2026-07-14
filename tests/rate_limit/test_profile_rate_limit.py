@@ -3,8 +3,7 @@ from httpx import AsyncClient
 from hdfs_anomaly.app.api.main import app
 from hdfs_anomaly.app.rate_limit.deps import get_rate_limit_service
 from hdfs_anomaly.app.rate_limit.rules import PROFILE_READ_LIMIT, PROFILE_WRITE_LIMIT
-from tests.conftest import FakeRateLimitService
-from tests.helpers import register_and_login
+from tests.helpers import FakeRateLimitService, register_and_login
 
 
 async def test_get_profile_applies_user_rate_limit(client: AsyncClient) -> None:
@@ -97,6 +96,28 @@ async def test_change_password_applies_user_write_rate_limit(client: AsyncClient
         app.dependency_overrides.pop(get_rate_limit_service, None)
 
     assert response.status_code == 200
+
+    rule, key = service.calls[0]
+
+    assert rule.scope == PROFILE_WRITE_LIMIT.scope
+    assert key == "rate-limit:profile_write:user:1"
+
+
+async def test_delete_profile_applies_profile_write_rate_limit(client: AsyncClient) -> None:
+    token = await register_and_login(client)
+
+    service = FakeRateLimitService()
+    app.dependency_overrides[get_rate_limit_service] = lambda: service
+
+    try:
+        response = await client.delete(
+            "/api/v1/profile",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_rate_limit_service, None)
+
+    assert response.status_code == 204
 
     rule, key = service.calls[0]
 

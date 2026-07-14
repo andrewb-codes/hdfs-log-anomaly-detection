@@ -3,8 +3,7 @@ from httpx import AsyncClient
 from hdfs_anomaly.app.api.main import app
 from hdfs_anomaly.app.rate_limit.deps import get_rate_limit_service
 from hdfs_anomaly.app.rate_limit.rules import LOGIN_ACCOUNT_LIMIT, LOGIN_GLOBAL_LIMIT
-from tests.conftest import FakeRateLimitService
-from tests.helpers import activate_profile
+from tests.helpers import FakeRateLimitService, activate_profile
 
 
 async def test_successful_login_applies_only_global_limit(client: AsyncClient) -> None:

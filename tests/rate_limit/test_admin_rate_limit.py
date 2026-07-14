@@ -3,8 +3,7 @@ from httpx import AsyncClient
 from hdfs_anomaly.app.api.main import app
 from hdfs_anomaly.app.rate_limit.deps import get_rate_limit_service
 from hdfs_anomaly.app.rate_limit.rules import ADMIN_READ_LIMIT, ADMIN_WRITE_LIMIT
-from tests.conftest import FakeRateLimitService
-from tests.helpers import make_admin, register_and_login
+from tests.helpers import FakeRateLimitService, make_admin, register_and_login
 
 
 async def test_admin_search_profiles_applies_admin_read_rate_limit(client: AsyncClient) -> None:

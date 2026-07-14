@@ -7,8 +7,7 @@ from hdfs_anomaly.app.api.main import app
 from hdfs_anomaly.app.rate_limit.deps import get_rate_limit_service
 from hdfs_anomaly.app.rate_limit.rules import MODEL_INFO_LIMIT, MODEL_PREDICT_LIMIT
 from hdfs_anomaly.app.schemas.model import PredictRequest, PredictResponse
-from tests.conftest import FakeRateLimitService
-from tests.helpers import make_admin, register_and_login
+from tests.helpers import FakeRateLimitService, make_admin, register_and_login
 
 
 @pytest.fixture

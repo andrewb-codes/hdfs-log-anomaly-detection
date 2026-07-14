@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from hdfs_anomaly.app.api.main import app
 from hdfs_anomaly.app.rate_limit.deps import get_rate_limit_service
 from hdfs_anomaly.app.rate_limit.rules import REGISTER_GLOBAL_LIMIT, REGISTER_IDENTIFIER_LIMIT
-from tests.conftest import FakeRateLimitService
+from tests.helpers import FakeRateLimitService
 
 
 async def test_registration_applies_global_and_identifier_limits(
