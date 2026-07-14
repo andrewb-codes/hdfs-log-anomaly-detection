@@ -31,6 +31,7 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://anomaly:anomaly@localhost:5432/anomaly_test
       JWT_SECRET: test-jwt-secret
       RATE_LIMIT_ENABLED: "false"
+      RATE_LIMIT_KEY_SECRET: test-rate-limit-secret
       BACKEND_CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
 
     steps:
