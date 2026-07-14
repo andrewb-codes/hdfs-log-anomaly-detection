@@ -8,6 +8,8 @@ from hdfs_anomaly.app.api.deps import (
 )
 from hdfs_anomaly.app.model.resources import InferenceResources
 from hdfs_anomaly.app.models.profile import Profile
+from hdfs_anomaly.app.rate_limit.deps import rate_limit_user
+from hdfs_anomaly.app.rate_limit.rules import MODEL_INFO_LIMIT, MODEL_PREDICT_LIMIT
 from hdfs_anomaly.app.schemas.model import ModelInfoResponse, PredictRequest, PredictResponse
 from hdfs_anomaly.app.services.model import ModelService
 
@@ -17,7 +19,7 @@ router = APIRouter(prefix="/api/v1/model", tags=["Model"])
 @router.get(
     "/info",
     response_model=ModelInfoResponse,
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_admin), Depends(rate_limit_user(MODEL_INFO_LIMIT))],
 )
 def model_info(resources: InferenceResources = Depends(get_resources)) -> ModelInfoResponse:
     """Return metadata for the currently loaded inference model."""
@@ -35,6 +37,7 @@ def model_info(resources: InferenceResources = Depends(get_resources)) -> ModelI
 async def predict(
     request: PredictRequest,
     profile: Profile = Depends(get_current_profile),
+    _: None = Depends(rate_limit_user(MODEL_PREDICT_LIMIT)),
     service: ModelService = Depends(get_model_service),
 ) -> PredictResponse:
     """Run anomaly inference for raw HDFS log lines and store request history."""
