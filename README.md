@@ -29,10 +29,12 @@ password: demopwd123456!
 - личная и общая история запросов со статистикой;
 - административное управление ролями и статусами;
 - воспроизводимые эксперименты через YAML-конфиги;
-- локальный Docker Compose и production-деплой через Ansible.
+- локальный Docker Compose и production-деплой через Ansible;
+- единый формат ошибок `{"detail": "error.<domain>.<reason>"}`;
+- rate limiting через Redis для public auth endpoints и авторизованных API routes.
 
 Основной стек: Python 3.12-3.14, PyTorch, scikit-learn, Drain3, FastAPI, Streamlit,
-SQLAlchemy 2 async, PostgreSQL, Alembic, Docker Compose и uv.
+SQLAlchemy 2 async, PostgreSQL, Redis, Alembic, Docker Compose и uv.
 
 ## Исследовательская постановка
 
@@ -85,11 +87,13 @@ browser
    │
    ▼
 Streamlit frontend ── HTTP/JWT ──▶ FastAPI ── SQLAlchemy ──▶ PostgreSQL
-                                        │
-                                        └──▶ Drain3 + LSTM artifacts
+                                       │
+                                       └── rate limits ──▶ Redis
+                                       │
+                                       └──▶ Drain3 + LSTM artifacts
 ```
 
-В локальном и production Compose API и PostgreSQL находятся во внутренней сети. Публичным
+В локальном и production Compose API, PostgreSQL и Redis находятся во внутренней сети. Публичным
 сервисом остаётся только frontend. API и frontend собираются в разные Docker images; модели и
 runtime-файлы в images не включаются.
 
@@ -125,6 +129,11 @@ cp .env.example .env
 Bootstrap admin и demo users управляются группами переменных `BOOTSTRAP_ADMIN_*`, `DEMO_*`.
 В production значения задаются через Ansible Vault или GitHub Secrets.
 
+Rate limiting управляется переменными `RATE_LIMIT_*`. В Docker Compose он включен
+по умолчанию, использует Redis по внутреннему адресу `async+redis://redis:6379/0`
+и требует отдельный `RATE_LIMIT_KEY_SECRET` для HMAC-хеширования email/login
+идентификаторов.
+
 API, Streamlit frontend и Alembic читают `.env` по умолчанию. Для другого файла окружения
 задайте `ENV_FILE`, например `ENV_FILE=.env.test uv run alembic upgrade head`.
 `STREAMLIT_API_URL` нужен при запуске frontend вне Docker Compose; в Compose frontend
@@ -133,7 +142,7 @@ API, Streamlit frontend и Alembic читают `.env` по умолчанию. 
 Первый запуск:
 
 ```bash
-docker compose up --build -d postgres
+docker compose up --build -d postgres redis
 docker compose run --rm api alembic upgrade head
 docker compose run --rm api python -m hdfs_anomaly.app.scripts.seed_data
 docker compose up -d api frontend
@@ -147,7 +156,7 @@ docker compose up --build -d
 
 Streamlit доступен по адресу `http://127.0.0.1:8501`.
 
-API не публикуется на хост и доступен только внутри Compose-сети.
+API и Redis не публикуется на хост и доступен только внутри Compose-сети.
 PostgreSQL привязан к localhost на `POSTGRES_PORT` для локальной разработки.
 
 Остановка:
@@ -211,6 +220,46 @@ uv run python scripts/evaluate_lstm_many_to_many.py --config configs/lstm_many_t
 
 Остальные варианты архитектур находятся в `configs/`, анализ экспериментов — в `notebooks/`,
 сохранённые метрики и графики — в `reports/`.
+
+### Rate limiting
+
+API использует библиотеку `limits` и Redis storage. Счетчики являются
+эфемерными: Redis запускается без persistence, с лимитом памяти `128mb` и policy
+`volatile-ttl`. После перезапуска Redis текущие окна лимитов сбрасываются, что
+допустимо для счетчиков защиты от частых запросов.
+
+При превышении лимита API возвращает:
+
+```json
+{"detail": "error.rate_limit.exceeded"}
+```
+
+со статусом `429 Too Many Requests` и заголовком `Retry-After`. Для успешных
+limited responses добавляются `X-RateLimit-Limit`, `X-RateLimit-Remaining` и
+`X-RateLimit-Reset`.
+
+Начальные лимиты:
+
+| Scope | Route | Key | Limit |
+|---|---|---|---|
+| `login_global` | `POST /api/v1/auth/login` | global | `60 per minute` |
+| `login_account` | failed `POST /api/v1/auth/login` | HMAC normalized email | `5 per minute` |
+| `register_global` | `POST /api/v1/registration` | global | `30 per hour` |
+| `register_identifier` | `POST /api/v1/registration` | HMAC normalized email | `3 per hour` |
+| `profile_read` | `GET /api/v1/profile` | user id | `120 per minute` |
+| `profile_write` | profile write/delete routes | user id | `30 per minute` |
+| `history_read` | history read/stat routes | user id | `120 per minute` |
+| `history_write` | history delete routes | user id | `30 per minute` |
+| `model_info` | `GET /api/v1/model/info` | admin user id | `60 per minute` |
+| `model_predict` | `POST /api/v1/model/predict` | user id | `30 per minute` |
+| `admin_read` | `GET /api/v1/admin/profiles` | admin user id | `120 per minute` |
+| `admin_write` | admin write routes | admin user id | `30 per minute` |
+
+`GET /health` не ограничивается.
+
+Для login account-limit применяется только после неуспешной аутентификации.
+Успешный login проверяет только global-limit, чтобы злоумышленник не мог легко
+заблокировать чужой аккаунт запросами с неправильным паролем.
 
 ## Разработка
 
@@ -277,7 +326,7 @@ CI выполняет эти проверки для push и pull request.
 
 GitHub Actions при push в `main` собирает API и frontend images, публикует их в 
 GHCR и запускает Ansible playbook. Production публикует через общую сеть Caddy 
-только Streamlit; API и PostgreSQL остаются во внутренней сети. Runtime-файлы 
+только Streamlit; API, PostgreSQL и Redis остаются во внутренней сети. Runtime-файлы 
 синхронизируются из Selectel S3.
 
 Настройка GitHub Variables, Secrets, Vault, ручной запуск и эксплуатационные 

@@ -1,4 +1,22 @@
 services:
+  redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "no"
+      - --save
+      - ""
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - volatile-ttl
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres:
     image: postgres:17
     environment:
@@ -6,7 +24,7 @@ services:
       POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER is required}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
     ports:
-      - "127.0.0.1:${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:?POSTGRES_PORT is required}:5432"
     volumes:
       - hdfs_anomaly_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,21 +37,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.api
-    environment:
-      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
-      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required}"
-      BOOTSTRAP_ADMIN_ENABLED: "${BOOTSTRAP_ADMIN_ENABLED:?BOOTSTRAP_ADMIN_ENABLED is required}"
-      BOOTSTRAP_ADMIN_EMAIL: "${BOOTSTRAP_ADMIN_EMAIL:?BOOTSTRAP_ADMIN_EMAIL is required}"
-      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:?BOOTSTRAP_ADMIN_PASSWORD is required}"
-      DEMO_USER_ENABLED: "${DEMO_USER_ENABLED}"
-      DEMO_EMAIL: "${DEMO_EMAIL}"
-      DEMO_PASSWORD: "${DEMO_PASSWORD}"
+    env_file:
+      - .env
     volumes:
       - ./artifacts:/app/artifacts
       - ./reports:/app/reports
       - ./configs:/app/configs
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
@@ -49,7 +62,7 @@ services:
     environment:
       STREAMLIT_API_URL: "http://api:8000"
     ports:
-      - "${STREAMLIT_PORT}:8501"
+      - "${STREAMLIT_PORT:?STREAMLIT_PORT is required}:8501"
     depends_on:
       api:
         condition: service_healthy

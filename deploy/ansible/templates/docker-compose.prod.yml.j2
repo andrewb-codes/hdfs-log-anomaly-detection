@@ -1,4 +1,26 @@
 services:
+  redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "no"
+      - --save
+      - ""
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - volatile-ttl
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    networks:
+      - default
+    restart: unless-stopped
+
   postgres:
     image: postgres:17
     environment:
@@ -19,21 +41,16 @@ services:
 
   api:
     image: "{{ api_image_ref }}"
-    environment:
-      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
-      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required}"
-      BOOTSTRAP_ADMIN_ENABLED: "${BOOTSTRAP_ADMIN_ENABLED:?BOOTSTRAP_ADMIN_ENABLED is required}"
-      BOOTSTRAP_ADMIN_EMAIL: "${BOOTSTRAP_ADMIN_EMAIL:?BOOTSTRAP_ADMIN_EMAIL is required}"
-      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:?BOOTSTRAP_ADMIN_PASSWORD is required}"
-      DEMO_USER_ENABLED: "${DEMO_USER_ENABLED}"
-      DEMO_EMAIL: "${DEMO_EMAIL}"
-      DEMO_PASSWORD: "${DEMO_PASSWORD}"
+    env_file:
+      - .env
     volumes:
       - ./artifacts:/app/artifacts
       - ./reports:/app/reports
       - ./configs:/app/configs
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test:

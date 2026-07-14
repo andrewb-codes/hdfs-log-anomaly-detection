@@ -1,5 +1,6 @@
 postgres_password: replace-with-a-long-random-password
 jwt_secret: replace-with-a-long-random-secret
+rate_limit_key_secret: replace-with-a-long-random-secret
 s3_access_key_id: replace-with-s3-access-key-id
 s3_secret_access_key: replace-with-s3-secret-access-key
 bootstrap_admin_password: replace-with-a-long-random-password

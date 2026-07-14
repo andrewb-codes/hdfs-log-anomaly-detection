@@ -18,6 +18,11 @@ s3_prefix: prod
 app_env:
   DATABASE_URL: postgresql+asyncpg://anomaly_user:{{ postgres_password | urlencode }}@postgres:5432/anomaly
   JWT_SECRET: "{{ jwt_secret }}"
+
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_REDIS_URL: async+redis://redis:6379/0
+  RATE_LIMIT_KEY_SECRET: "{{ rate_limit_key_secret }}"
+
   POSTGRES_DB: anomaly
   POSTGRES_USER: anomaly_user
   POSTGRES_PASSWORD: "{{ postgres_password }}"

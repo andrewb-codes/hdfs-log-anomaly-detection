@@ -147,15 +147,28 @@
       when: postgres_image.rc != 0
       changed_when: true
 
+    - name: Pull Redis image if missing
+      ansible.builtin.command:
+        cmd: docker image inspect redis:7.4-alpine
+      register: redis_image
+      changed_when: false
+      failed_when: false
+
+    - name: Pull Redis image
+      ansible.builtin.command:
+        cmd: docker pull redis:7.4-alpine
+      when: redis_image.rc != 0
+      changed_when: true
+
     - name: Pull API and frontend images
       ansible.builtin.command:
         cmd: docker compose -f docker-compose.prod.yml pull api frontend
         chdir: "{{ app_dir }}"
       changed_when: true
 
-    - name: Start PostgreSQL
+    - name: Start infrastructure services
       ansible.builtin.command:
-        cmd: docker compose -f docker-compose.prod.yml up -d postgres
+        cmd: docker compose -f docker-compose.prod.yml up -d postgres redis
         chdir: "{{ app_dir }}"
       changed_when: true
 
