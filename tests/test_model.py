@@ -1,7 +1,37 @@
+from typing import Any
+
+import pytest
 from httpx import AsyncClient
 
-from hdfs_anomaly.app.schemas.model import PredictResponse
+from hdfs_anomaly.app.schemas.model import PredictRequest, PredictResponse
 from tests.helpers import make_admin, register_and_login
+
+
+@pytest.fixture
+def stub_successful_inference(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_run_inference(request: PredictRequest, resources: Any) -> PredictResponse:
+        return PredictResponse(
+            block_id=request.block_id,
+            score=0.7,
+            threshold=resources.threshold,
+            is_anomaly=True,
+            scoring_strategy=resources.scoring_strategy,
+            num_log_lines=len(request.log_lines),
+            num_events=3,
+            num_windows=1,
+            event_ids=[1, 2, 3],
+            window_scores=[0.7],
+        )
+
+    monkeypatch.setattr("hdfs_anomaly.app.services.model.run_inference", fake_run_inference)
+
+
+@pytest.fixture
+def stub_failed_inference(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_run_inference(_request: PredictRequest, _resources: Any) -> PredictResponse:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("hdfs_anomaly.app.services.model.run_inference", fake_run_inference)
 
 
 async def test_model_info_without_token_returns_401(client: AsyncClient) -> None:
@@ -45,25 +75,9 @@ async def test_admin_can_get_model_info(client: AsyncClient) -> None:
 
 async def test_predict_returns_response_and_writes_history(
     client: AsyncClient,
-    monkeypatch,
+    stub_successful_inference: None,
 ) -> None:
     token = await register_and_login(client)
-
-    def fake_run_inference(request, resources) -> PredictResponse:
-        return PredictResponse(
-            block_id=request.block_id,
-            score=0.7,
-            threshold=resources.threshold,
-            is_anomaly=True,
-            scoring_strategy=resources.scoring_strategy,
-            num_log_lines=len(request.log_lines),
-            num_events=3,
-            num_windows=1,
-            event_ids=[1, 2, 3],
-            window_scores=[0.7],
-        )
-
-    monkeypatch.setattr("hdfs_anomaly.app.services.model.run_inference", fake_run_inference)
 
     response = await client.post(
         "/api/v1/model/predict",
@@ -116,14 +130,9 @@ async def test_predict_invalid_payload_returns_422(client: AsyncClient) -> None:
 
 async def test_predict_inference_failure_returns_422_and_writes_failed_history(
     client: AsyncClient,
-    monkeypatch,
+    stub_failed_inference: None,
 ) -> None:
     token = await register_and_login(client)
-
-    def fake_run_inference(_request, _resources) -> PredictResponse:
-        raise RuntimeError("boom")
-
-    monkeypatch.setattr("hdfs_anomaly.app.services.model.run_inference", fake_run_inference)
 
     response = await client.post(
         "/api/v1/model/predict",

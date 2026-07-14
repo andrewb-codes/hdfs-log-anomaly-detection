@@ -20,14 +20,20 @@ async def clean_db() -> None:
 
 
 @pytest.fixture
-async def client(monkeypatch: pytest.MonkeyPatch) -> AsyncGenerator[AsyncClient, None]:
-    fake_resources = SimpleNamespace(
+def fake_resources() -> SimpleNamespace:
+    return SimpleNamespace(
         scoring_strategy="nll_max",
         threshold=0.5,
         window_size=8,
         stride=1,
         device="cpu",
     )
+
+
+@pytest.fixture
+async def client(
+    monkeypatch: pytest.MonkeyPatch, fake_resources: SimpleNamespace
+) -> AsyncGenerator[AsyncClient, None]:
     monkeypatch.setattr(api_main, "load_resources", lambda: fake_resources)
 
     async with (
