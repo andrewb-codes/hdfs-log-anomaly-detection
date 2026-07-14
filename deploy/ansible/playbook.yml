@@ -136,28 +136,28 @@
 
     - name: Pull PostgreSQL image if missing
       ansible.builtin.command:
-        cmd: docker image inspect postgres:17
-      register: postgres_image
+        cmd: "docker image inspect {{ postgres_image }}"
+      register: postgres_image_check
       changed_when: false
       failed_when: false
 
     - name: Pull PostgreSQL image
       ansible.builtin.command:
-        cmd: docker pull postgres:17
-      when: postgres_image.rc != 0
+        cmd: "docker pull {{ postgres_image }}"
+      when: postgres_image_check.rc != 0
       changed_when: true
 
     - name: Pull Redis image if missing
       ansible.builtin.command:
-        cmd: docker image inspect redis:7.4-alpine
-      register: redis_image
+        cmd: "docker image inspect {{ redis_image }}"
+      register: redis_image_check
       changed_when: false
       failed_when: false
 
     - name: Pull Redis image
       ansible.builtin.command:
-        cmd: docker pull redis:7.4-alpine
-      when: redis_image.rc != 0
+        cmd: "docker pull {{ redis_image }}"
+      when: redis_image_check.rc != 0
       changed_when: true
 
     - name: Pull API and frontend images

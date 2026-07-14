@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:7.4-alpine
+    image: "{{ redis_image }}"
     command:
       - redis-server
       - --appendonly
@@ -22,7 +22,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:17
+    image: "{{ postgres_image }}"
     environment:
       POSTGRES_DB: "${POSTGRES_DB:?POSTGRES_DB is required}"
       POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER is required}"

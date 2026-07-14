@@ -28,7 +28,15 @@ Production images:
 api_image: ghcr.io/andrewb-codes/hdfs-log-anomaly-detection-api
 frontend_image: ghcr.io/andrewb-codes/hdfs-log-anomaly-detection-frontend
 app_image_tag: main
+
+postgres_image: mirror.gcr.io/library/postgres:17
+redis_image: mirror.gcr.io/library/redis:7.4-alpine
 ```
+
+PostgreSQL и Redis используют зеркало Docker Hub official images, чтобы VPS не
+упирался в anonymous pull rate limit Docker Hub. При необходимости эти значения
+можно заменить на `postgres:17` и `redis:7.4-alpine` или на образы из своего
+registry.
 
 Seed-скрипт создает включенные в `app_env` сущности:
 
