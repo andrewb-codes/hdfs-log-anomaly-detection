@@ -21,8 +21,6 @@ artifacts/
 ├── drain/
 │   ├── one_step_drain3_state.bin
 │   └── many_to_many_drain3_state.bin
-├── api/
-│   └── history.sqlite3
 └── lstm/
     ├── one_step/
     │   ├── dataset.npz
@@ -59,11 +57,6 @@ drain_event_sequence_transformer.joblib
 
 Сериализованный Drain transformer, который переводит raw log lines в последовательности event ids.
 
-```text
-artifacts/api/history.sqlite3
-```
-
-SQLite-база истории запросов FastAPI-сервиса.
 
 ```text
 <run_name>/model.pt
