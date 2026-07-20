@@ -22,6 +22,11 @@ app_env:
   DATABASE_URL: postgresql+asyncpg://anomaly_user:{{ postgres_password | urlencode }}@postgres:5432/anomaly
   JWT_SECRET: "{{ jwt_secret }}"
 
+  ENVIRONMENT: production
+  LOG_LEVEL: INFO
+  LOG_FORMAT: json
+  SQL_LOG_LEVEL: WARNING
+
   RATE_LIMIT_ENABLED: "true"
   RATE_LIMIT_REDIS_URL: async+redis://redis:6379/0
   RATE_LIMIT_KEY_SECRET: "{{ rate_limit_key_secret }}"

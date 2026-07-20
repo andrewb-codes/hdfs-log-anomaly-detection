@@ -31,10 +31,11 @@ password: demopwd123456!
 - воспроизводимые эксперименты через YAML-конфиги;
 - локальный Docker Compose и production-деплой через Ansible;
 - единый формат ошибок `{"detail": "error.<domain>.<reason>"}`;
-- rate limiting через Redis для public auth endpoints и авторизованных API routes.
+- rate limiting через Redis для public auth endpoints и авторизованных API routes;
+- структурированное логирование запросов с `X-Request-ID`.
 
-Основной стек: Python 3.12-3.14, PyTorch, scikit-learn, Drain3, FastAPI, Streamlit,
-SQLAlchemy 2 async, PostgreSQL, Redis, Alembic, Docker Compose и uv.
+Основной стек: Python 3.12-3.13, PyTorch, scikit-learn, Drain3, FastAPI, Streamlit,
+SQLAlchemy 2 async, PostgreSQL, Redis, Alembic, structlog, Docker Compose и uv.
 
 ## Исследовательская постановка
 
@@ -129,6 +130,10 @@ cp .env.example .env
 Bootstrap admin и demo users управляются группами переменных `BOOTSTRAP_ADMIN_*`, `DEMO_*`.
 В production значения задаются через Ansible Vault или GitHub Secrets.
 
+Логирование управляется переменными `ENVIRONMENT`, `LOG_LEVEL`, `LOG_FORMAT`
+и `SQL_LOG_LEVEL`. Для локальной разработки используется `LOG_FORMAT=console`,
+для production — `LOG_FORMAT=json`. Логи API пишутся в stdout процесса контейнера.
+
 Rate limiting управляется переменными `RATE_LIMIT_*`. В Docker Compose он включен
 по умолчанию, использует Redis по внутреннему адресу `async+redis://redis:6379/0`
 и требует отдельный `RATE_LIMIT_KEY_SECRET` для HMAC-хеширования email/login
@@ -146,6 +151,7 @@ docker compose up --build -d postgres redis
 docker compose run --rm api alembic upgrade head
 docker compose run --rm api python -m hdfs_anomaly.app.scripts.seed_data
 docker compose up -d api frontend
+docker compose logs -f api
 ```
 
 При следующих запусках, если миграции и seed не изменялись:
@@ -273,16 +279,20 @@ uv sync --all-extras --all-groups
 
 ```text
 src/hdfs_anomaly/app/api/          FastAPI entrypoint, endpoints и зависимости
+src/hdfs_anomaly/app/core/         настройки, security, logging и ошибки
+src/hdfs_anomaly/app/db/           SQLAlchemy base/session
+src/hdfs_anomaly/app/middleware/   HTTP middleware
 src/hdfs_anomaly/app/models/       SQLAlchemy-модели
 src/hdfs_anomaly/app/repositories/ запросы к БД
 src/hdfs_anomaly/app/services/     бизнес-логика
 src/hdfs_anomaly/app/model/        загрузка модели и inference
-src/hdfs_anomaly/app/scripts       seed и maintenance scripts
 src/hdfs_anomaly/app/frontend/     Streamlit-интерфейс
+src/hdfs_anomaly/app/scripts       seed и maintenance scripts
 src/hdfs_anomaly/parsing/          Drain3-парсинг
 src/hdfs_anomaly/sequences/        split и windowing
 src/hdfs_anomaly/models/           ML/LSTM-модели
 alembic/                           миграции
+tests/                             unit и интеграционные API-тесты
 deploy/ansible/                    production-деплой
 ```
 
@@ -302,6 +312,11 @@ PostgreSQL-контейнере. Не указывайте в `.env.test` осн
 фикстуры тестов очищают таблицы перед каждым тестом. Пользователь, пароль и
 порт в `DATABASE_URL` из `.env.test` должны совпадать с `POSTGRES_USER`,
 `POSTGRES_PASSWORD` и `POSTGRES_PORT` в `.env`.
+
+В `.env.test` rate limiting выключен через `RATE_LIMIT_ENABLED=false`, чтобы
+обычный test suite не зависел от Redis. Rate-limit wiring тестируется отдельно
+через FastAPI dependency overrides и fake service.
+Для тестов используется `ENVIRONMENT=test` и человекочитаемый `LOG_FORMAT=console`.
 
 ```bash
 cp .env.test.example .env.test

@@ -26,7 +26,7 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_PORT:?POSTGRES_PORT is required}:5432"
     volumes:
-      - hdfs_anomaly_data:/var/lib/postgresql/data
+      - hdfs_anomaly_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
       interval: 5s
@@ -74,4 +74,4 @@ services:
       start_period: 30s
 
 volumes:
-  hdfs_anomaly_data:
+  hdfs_anomaly_postgres_data:

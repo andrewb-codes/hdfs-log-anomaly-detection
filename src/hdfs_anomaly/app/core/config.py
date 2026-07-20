@@ -6,8 +6,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "HDFS Log Anomaly Detection API"
-    debug: bool = False
-    sql_echo: bool = False
+    environment: Literal["development", "test", "production"] = "development"
+    log_level: str = "INFO"
+    log_format: Literal["console", "json"] = "console"
+    sql_log_level: str = "WARNING"
 
     database_url: str
 
