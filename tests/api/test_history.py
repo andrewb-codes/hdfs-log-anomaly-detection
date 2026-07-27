@@ -2,7 +2,7 @@ from httpx import AsyncClient
 from sqlalchemy import text
 
 from hdfs_anomaly.app.db.session import AsyncSessionLocal
-from tests.helpers import make_admin, register_and_login
+from tests.helpers import make_admin, register_user
 
 HISTORY_ITEM_FIELDS = {
     "id",
@@ -97,12 +97,12 @@ async def create_history_item(
 
 
 async def test_list_profile_history(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
     await create_history_item(profile_id=1, block_id="blk_1")
 
     response = await client.get(
         "/api/v1/history",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     body = response.json()
@@ -116,17 +116,17 @@ async def test_list_profile_history(client: AsyncClient) -> None:
 
 
 async def test_list_profile_history_pagination_has_next(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
     await create_history_item(profile_id=1, block_id="blk_1")
     await create_history_item(profile_id=1, block_id="blk_2")
 
     first_page_response = await client.get(
         "/api/v1/history?page=1&page_size=1",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
     second_page_response = await client.get(
         "/api/v1/history?page=2&page_size=1",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     first_page = first_page_response.json()
@@ -141,11 +141,11 @@ async def test_list_profile_history_pagination_has_next(client: AsyncClient) -> 
 
 
 async def test_list_all_history_requires_admin(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.get(
         "/api/v1/history/all",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     assert response.status_code == 403
@@ -153,15 +153,15 @@ async def test_list_all_history_requires_admin(client: AsyncClient) -> None:
 
 
 async def test_admin_can_list_all_history(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user@mail.com")
     await make_admin(profile_id=1)
     await create_history_item(profile_id=1, block_id="admin_blk")
     await create_history_item(profile_id=2, block_id="user_blk")
 
     response = await client.get(
         "/api/v1/history/all",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     body = response.json()
@@ -172,7 +172,7 @@ async def test_admin_can_list_all_history(client: AsyncClient) -> None:
 
 
 async def test_profile_history_stats(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
     await create_history_item(profile_id=1, block_id="ok", status_code=200)
     await create_history_item(
         profile_id=1,
@@ -186,7 +186,7 @@ async def test_profile_history_stats(client: AsyncClient) -> None:
 
     response = await client.get(
         "/api/v1/history/stats",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     body = response.json()
@@ -200,11 +200,11 @@ async def test_profile_history_stats(client: AsyncClient) -> None:
 
 
 async def test_all_history_stats_requires_admin(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.get(
         "/api/v1/history/stats/all",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     assert response.status_code == 403
@@ -212,15 +212,15 @@ async def test_all_history_stats_requires_admin(client: AsyncClient) -> None:
 
 
 async def test_admin_can_get_all_history_stats(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user@mail.com")
     await make_admin(profile_id=1)
     await create_history_item(profile_id=1, block_id="admin_blk")
     await create_history_item(profile_id=2, block_id="user_blk")
 
     response = await client.get(
         "/api/v1/history/stats/all",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     body = response.json()
@@ -233,17 +233,17 @@ async def test_admin_can_get_all_history_stats(client: AsyncClient) -> None:
 
 
 async def test_clear_profile_history(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
     await create_history_item(profile_id=1, block_id="blk_1")
     await create_history_item(profile_id=1, block_id="blk_2")
 
     response = await client.delete(
         "/api/v1/history",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
     list_response = await client.get(
         "/api/v1/history",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     assert response.status_code == 200
@@ -252,11 +252,11 @@ async def test_clear_profile_history(client: AsyncClient) -> None:
 
 
 async def test_clear_all_history_requires_admin(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.delete(
         "/api/v1/history/all",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     assert response.status_code == 403
@@ -264,19 +264,19 @@ async def test_clear_all_history_requires_admin(client: AsyncClient) -> None:
 
 
 async def test_admin_can_clear_all_history(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user@mail.com")
     await make_admin(profile_id=1)
     await create_history_item(profile_id=1, block_id="admin_blk")
     await create_history_item(profile_id=2, block_id="user_blk")
 
     response = await client.delete(
         "/api/v1/history/all",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
     list_response = await client.get(
         "/api/v1/history/all",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     assert response.status_code == 200

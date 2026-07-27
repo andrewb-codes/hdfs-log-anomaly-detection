@@ -48,7 +48,7 @@ class HistoryRepository:
         query = (
             select(RequestHistory)
             .where(RequestHistory.profile_id == profile_id)
-            .order_by(RequestHistory.created_at.desc())
+            .order_by(RequestHistory.created_at.desc(), RequestHistory.id.desc())
             .limit(limit)
             .offset(offset)
         )
@@ -58,7 +58,7 @@ class HistoryRepository:
     async def list_all_history(self, *, limit: int, offset: int) -> list[RequestHistory]:
         query = (
             select(RequestHistory)
-            .order_by(RequestHistory.created_at.desc())
+            .order_by(RequestHistory.created_at.desc(), RequestHistory.id.desc())
             .limit(limit)
             .offset(offset)
         )

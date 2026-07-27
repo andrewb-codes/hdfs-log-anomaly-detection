@@ -3,11 +3,11 @@ from httpx import AsyncClient
 from hdfs_anomaly.app.api.main import app
 from hdfs_anomaly.app.rate_limit.deps import get_rate_limit_service
 from hdfs_anomaly.app.rate_limit.rules import ADMIN_READ_LIMIT, ADMIN_WRITE_LIMIT
-from tests.helpers import FakeRateLimitService, make_admin, register_and_login
+from tests.helpers import FakeRateLimitService, make_admin, register_user
 
 
 async def test_admin_search_profiles_applies_admin_read_rate_limit(client: AsyncClient) -> None:
-    token = await register_and_login(client, email="admin@mail.com")
+    user = await register_user(client, email="admin@mail.com")
     await make_admin(1)
 
     service = FakeRateLimitService()
@@ -16,7 +16,7 @@ async def test_admin_search_profiles_applies_admin_read_rate_limit(client: Async
     try:
         response = await client.get(
             "/api/v1/admin/profiles",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
         )
     finally:
         app.dependency_overrides.pop(get_rate_limit_service, None)
@@ -32,7 +32,7 @@ async def test_admin_search_profiles_applies_admin_read_rate_limit(client: Async
 async def test_admin_search_profiles_returns_429_when_rate_limit_exceeded(
     client: AsyncClient,
 ) -> None:
-    token = await register_and_login(client, email="admin@mail.com")
+    user = await register_user(client, email="admin@mail.com")
     await make_admin(1)
 
     service = FakeRateLimitService(denied_scope=ADMIN_READ_LIMIT.scope)
@@ -41,7 +41,7 @@ async def test_admin_search_profiles_returns_429_when_rate_limit_exceeded(
     try:
         response = await client.get(
             "/api/v1/admin/profiles",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
         )
     finally:
         app.dependency_overrides.pop(get_rate_limit_service, None)
@@ -52,9 +52,9 @@ async def test_admin_search_profiles_returns_429_when_rate_limit_exceeded(
 
 
 async def test_admin_change_status_applies_admin_write_rate_limit(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
     await make_admin(1)
-    await register_and_login(client, email="user@mail.com")
+    await register_user(client, email="user@mail.com")
 
     service = FakeRateLimitService()
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -62,7 +62,7 @@ async def test_admin_change_status_applies_admin_write_rate_limit(client: AsyncC
     try:
         response = await client.patch(
             "/api/v1/admin/profiles/2/status",
-            headers={"Authorization": f"Bearer {admin_token}"},
+            headers=admin_user.headers,
             json={"status": "ACTIVE", "version": 0},
         )
     finally:
@@ -79,9 +79,9 @@ async def test_admin_change_status_applies_admin_write_rate_limit(client: AsyncC
 async def test_admin_change_status_returns_429_when_rate_limit_exceeded(
     client: AsyncClient,
 ) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
     await make_admin(1)
-    await register_and_login(client, email="user@mail.com")
+    await register_user(client, email="user@mail.com")
 
     service = FakeRateLimitService(denied_scope=ADMIN_WRITE_LIMIT.scope)
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -89,7 +89,7 @@ async def test_admin_change_status_returns_429_when_rate_limit_exceeded(
     try:
         response = await client.patch(
             "/api/v1/admin/profiles/2/status",
-            headers={"Authorization": f"Bearer {admin_token}"},
+            headers=admin_user.headers,
             json={"status": "ACTIVE", "version": 0},
         )
     finally:
@@ -101,9 +101,9 @@ async def test_admin_change_status_returns_429_when_rate_limit_exceeded(
 
 
 async def test_admin_change_role_applies_admin_write_rate_limit(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
     await make_admin(1)
-    await register_and_login(client, email="user@mail.com")
+    await register_user(client, email="user@mail.com")
 
     service = FakeRateLimitService()
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -111,7 +111,7 @@ async def test_admin_change_role_applies_admin_write_rate_limit(client: AsyncCli
     try:
         response = await client.patch(
             "/api/v1/admin/profiles/2/role",
-            headers={"Authorization": f"Bearer {admin_token}"},
+            headers=admin_user.headers,
             json={"role": "ADMIN", "version": 0},
         )
     finally:
@@ -128,9 +128,9 @@ async def test_admin_change_role_applies_admin_write_rate_limit(client: AsyncCli
 async def test_admin_change_role_returns_429_when_rate_limit_exceeded(
     client: AsyncClient,
 ) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
     await make_admin(1)
-    await register_and_login(client, email="user@mail.com")
+    await register_user(client, email="user@mail.com")
 
     service = FakeRateLimitService(denied_scope=ADMIN_WRITE_LIMIT.scope)
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -138,7 +138,7 @@ async def test_admin_change_role_returns_429_when_rate_limit_exceeded(
     try:
         response = await client.patch(
             "/api/v1/admin/profiles/2/role",
-            headers={"Authorization": f"Bearer {admin_token}"},
+            headers=admin_user.headers,
             json={"role": "ADMIN", "version": 0},
         )
     finally:

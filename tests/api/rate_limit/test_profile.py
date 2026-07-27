@@ -3,11 +3,11 @@ from httpx import AsyncClient
 from hdfs_anomaly.app.api.main import app
 from hdfs_anomaly.app.rate_limit.deps import get_rate_limit_service
 from hdfs_anomaly.app.rate_limit.rules import PROFILE_READ_LIMIT, PROFILE_WRITE_LIMIT
-from tests.helpers import FakeRateLimitService, register_and_login
+from tests.helpers import FakeRateLimitService, register_user
 
 
 async def test_get_profile_applies_user_rate_limit(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     service = FakeRateLimitService()
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -15,7 +15,7 @@ async def test_get_profile_applies_user_rate_limit(client: AsyncClient) -> None:
     try:
         response = await client.get(
             "/api/v1/profile",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
         )
     finally:
         app.dependency_overrides.pop(get_rate_limit_service, None)
@@ -31,7 +31,7 @@ async def test_get_profile_applies_user_rate_limit(client: AsyncClient) -> None:
 
 
 async def test_get_profile_returns_429_when_rate_limit_exceeded(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     service = FakeRateLimitService(denied_scope=PROFILE_READ_LIMIT.scope)
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -39,7 +39,7 @@ async def test_get_profile_returns_429_when_rate_limit_exceeded(client: AsyncCli
     try:
         response = await client.get(
             "/api/v1/profile",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
         )
     finally:
         app.dependency_overrides.pop(get_rate_limit_service, None)
@@ -50,7 +50,7 @@ async def test_get_profile_returns_429_when_rate_limit_exceeded(client: AsyncCli
 
 
 async def test_change_email_applies_user_write_rate_limit(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     service = FakeRateLimitService()
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -58,7 +58,7 @@ async def test_change_email_applies_user_write_rate_limit(client: AsyncClient) -
     try:
         response = await client.patch(
             "/api/v1/profile/email",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
             json={
                 "new_email": "new-user@mail.com",
                 "current_password": "123456",
@@ -77,7 +77,7 @@ async def test_change_email_applies_user_write_rate_limit(client: AsyncClient) -
 
 
 async def test_change_password_applies_user_write_rate_limit(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     service = FakeRateLimitService()
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -85,7 +85,7 @@ async def test_change_password_applies_user_write_rate_limit(client: AsyncClient
     try:
         response = await client.patch(
             "/api/v1/profile/password",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
             json={
                 "current_password": "123456",
                 "new_password": "654321",
@@ -104,7 +104,7 @@ async def test_change_password_applies_user_write_rate_limit(client: AsyncClient
 
 
 async def test_delete_profile_applies_profile_write_rate_limit(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     service = FakeRateLimitService()
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -112,7 +112,7 @@ async def test_delete_profile_applies_profile_write_rate_limit(client: AsyncClie
     try:
         response = await client.delete(
             "/api/v1/profile",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
         )
     finally:
         app.dependency_overrides.pop(get_rate_limit_service, None)
@@ -128,7 +128,7 @@ async def test_delete_profile_applies_profile_write_rate_limit(client: AsyncClie
 async def test_delete_profile_returns_429_when_rate_limit_exceeded(
     client: AsyncClient,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     service = FakeRateLimitService(denied_scope=PROFILE_WRITE_LIMIT.scope)
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -136,7 +136,7 @@ async def test_delete_profile_returns_429_when_rate_limit_exceeded(
     try:
         response = await client.delete(
             "/api/v1/profile",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
         )
     finally:
         app.dependency_overrides.pop(get_rate_limit_service, None)

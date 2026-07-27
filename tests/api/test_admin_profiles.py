@@ -1,6 +1,6 @@
 from httpx import AsyncClient
 
-from tests.helpers import make_admin, register_and_login
+from tests.helpers import make_admin, register_user
 
 ADMIN_PROFILE_RESPONSE_FIELDS = {
     "id",
@@ -20,11 +20,11 @@ async def test_admin_profiles_without_token_returns_401(client: AsyncClient) -> 
 
 
 async def test_user_cannot_search_admin_profiles(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.get(
         "/api/v1/admin/profiles",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     assert response.status_code == 403
@@ -32,14 +32,14 @@ async def test_user_cannot_search_admin_profiles(client: AsyncClient) -> None:
 
 
 async def test_admin_can_search_profiles(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.get(
         "/api/v1/admin/profiles",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     body = response.json()
@@ -54,15 +54,15 @@ async def test_admin_can_search_profiles(client: AsyncClient) -> None:
 async def test_admin_search_profiles_filters_by_email_prefix(
     client: AsyncClient,
 ) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="alice@mail.com")
-    await register_and_login(client, email="bob@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="alice@mail.com")
+    await register_user(client, email="bob@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.get(
         "/api/v1/admin/profiles?email_starts_with=ali",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     body = response.json()
@@ -73,14 +73,14 @@ async def test_admin_search_profiles_filters_by_email_prefix(
 
 
 async def test_admin_search_profiles_filters_by_role(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.get(
         "/api/v1/admin/profiles?role=ADMIN",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     body = response.json()
@@ -92,7 +92,7 @@ async def test_admin_search_profiles_filters_by_role(client: AsyncClient) -> Non
 
 
 async def test_admin_search_profiles_filters_by_status(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
     await client.post(
         "/api/v1/registration",
         json={"email": "inactive@mail.com", "password": "123456"},
@@ -102,7 +102,7 @@ async def test_admin_search_profiles_filters_by_status(client: AsyncClient) -> N
 
     response = await client.get(
         "/api/v1/admin/profiles?status=INACTIVE",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     body = response.json()
@@ -114,19 +114,19 @@ async def test_admin_search_profiles_filters_by_status(client: AsyncClient) -> N
 
 
 async def test_admin_profiles_pagination_has_next(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user1@mail.com")
-    await register_and_login(client, email="user2@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user1@mail.com")
+    await register_user(client, email="user2@mail.com")
 
     await make_admin(profile_id=1)
 
     first_page_response = await client.get(
         "/api/v1/admin/profiles?page=1&page_size=2",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
     second_page_response = await client.get(
         "/api/v1/admin/profiles?page=2&page_size=2",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     first_page = first_page_response.json()
@@ -141,7 +141,7 @@ async def test_admin_profiles_pagination_has_next(client: AsyncClient) -> None:
 
 
 async def test_admin_can_change_profile_status(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
     await client.post(
         "/api/v1/registration",
         json={"email": "user@mail.com", "password": "123456"},
@@ -151,7 +151,7 @@ async def test_admin_can_change_profile_status(client: AsyncClient) -> None:
 
     response = await client.patch(
         "/api/v1/admin/profiles/2/status",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
         json={"status": "ACTIVE", "version": 0},
     )
 
@@ -165,14 +165,14 @@ async def test_admin_can_change_profile_status(client: AsyncClient) -> None:
 
 
 async def test_admin_can_change_profile_role(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.patch(
         "/api/v1/admin/profiles/2/role",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
         json={"role": "ADMIN", "version": 0},
     )
 
@@ -186,13 +186,13 @@ async def test_admin_can_change_profile_role(client: AsyncClient) -> None:
 
 
 async def test_admin_cannot_change_own_status(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.patch(
         "/api/v1/admin/profiles/1/status",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
         json={"status": "ACTIVE", "version": 0},
     )
 
@@ -201,13 +201,13 @@ async def test_admin_cannot_change_own_status(client: AsyncClient) -> None:
 
 
 async def test_admin_cannot_change_own_role(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.patch(
         "/api/v1/admin/profiles/1/role",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
         json={"role": "USER", "version": 0},
     )
 
@@ -218,14 +218,14 @@ async def test_admin_cannot_change_own_role(client: AsyncClient) -> None:
 async def test_admin_change_profile_status_with_wrong_version_returns_409(
     client: AsyncClient,
 ) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.patch(
         "/api/v1/admin/profiles/2/status",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
         json={"status": "ACTIVE", "version": 999},
     )
 
@@ -236,14 +236,14 @@ async def test_admin_change_profile_status_with_wrong_version_returns_409(
 async def test_admin_change_profile_role_with_wrong_version_returns_409(
     client: AsyncClient,
 ) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
-    await register_and_login(client, email="user@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
+    await register_user(client, email="user@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.patch(
         "/api/v1/admin/profiles/2/role",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
         json={"role": "ADMIN", "version": 999},
     )
 
@@ -254,13 +254,13 @@ async def test_admin_change_profile_role_with_wrong_version_returns_409(
 async def test_admin_change_missing_profile_status_returns_404(
     client: AsyncClient,
 ) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.patch(
         "/api/v1/admin/profiles/999/status",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
         json={"status": "ACTIVE", "version": 0},
     )
 
@@ -271,13 +271,13 @@ async def test_admin_change_missing_profile_status_returns_404(
 async def test_admin_change_missing_profile_role_returns_404(
     client: AsyncClient,
 ) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
 
     await make_admin(profile_id=1)
 
     response = await client.patch(
         "/api/v1/admin/profiles/999/role",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
         json={"role": "ADMIN", "version": 0},
     )
 

@@ -1,12 +1,8 @@
-from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 
 import pytest
-from asgi_lifespan import LifespanManager
-from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
-import hdfs_anomaly.app.api.main as api_main
 from hdfs_anomaly.app.db.session import AsyncSessionLocal
 
 
@@ -31,19 +27,3 @@ def fake_resources() -> SimpleNamespace:
         stride=1,
         device="cpu",
     )
-
-
-@pytest.fixture
-async def client(
-    monkeypatch: pytest.MonkeyPatch, fake_resources: SimpleNamespace
-) -> AsyncGenerator[AsyncClient, None]:
-    monkeypatch.setattr(api_main, "load_resources", lambda: fake_resources)
-
-    async with (
-        LifespanManager(api_main.app),
-        AsyncClient(
-            transport=ASGITransport(app=api_main.app),
-            base_url="http://test",
-        ) as client,
-    ):
-        yield client

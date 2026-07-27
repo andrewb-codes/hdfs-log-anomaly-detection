@@ -7,7 +7,7 @@ from hdfs_anomaly.app.api.main import app
 from hdfs_anomaly.app.rate_limit.deps import get_rate_limit_service
 from hdfs_anomaly.app.rate_limit.rules import MODEL_INFO_LIMIT, MODEL_PREDICT_LIMIT
 from hdfs_anomaly.app.schemas.model import PredictRequest, PredictResponse
-from tests.helpers import FakeRateLimitService, make_admin, register_and_login
+from tests.helpers import FakeRateLimitService, make_admin, register_user
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def stub_successful_inference(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 async def test_model_info_applies_model_info_rate_limit(client: AsyncClient) -> None:
-    token = await register_and_login(client, email="admin@mail.com")
+    user = await register_user(client, email="admin@mail.com")
     await make_admin(1)
 
     service = FakeRateLimitService()
@@ -39,7 +39,7 @@ async def test_model_info_applies_model_info_rate_limit(client: AsyncClient) -> 
     try:
         response = await client.get(
             "/api/v1/model/info",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
         )
     finally:
         app.dependency_overrides.pop(get_rate_limit_service, None)
@@ -55,7 +55,7 @@ async def test_model_info_applies_model_info_rate_limit(client: AsyncClient) -> 
 async def test_model_info_returns_429_when_rate_limit_exceeded(
     client: AsyncClient,
 ) -> None:
-    token = await register_and_login(client, email="admin@mail.com")
+    user = await register_user(client, email="admin@mail.com")
     await make_admin(1)
 
     service = FakeRateLimitService(denied_scope=MODEL_INFO_LIMIT.scope)
@@ -64,7 +64,7 @@ async def test_model_info_returns_429_when_rate_limit_exceeded(
     try:
         response = await client.get(
             "/api/v1/model/info",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
         )
     finally:
         app.dependency_overrides.pop(get_rate_limit_service, None)
@@ -78,7 +78,7 @@ async def test_predict_applies_model_predict_rate_limit(
     client: AsyncClient,
     stub_successful_inference: None,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     service = FakeRateLimitService()
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -86,7 +86,7 @@ async def test_predict_applies_model_predict_rate_limit(
     try:
         response = await client.post(
             "/api/v1/model/predict",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
             json={"block_id": "blk_1", "log_lines": ["line 1"]},
         )
     finally:
@@ -103,7 +103,7 @@ async def test_predict_applies_model_predict_rate_limit(
 async def test_predict_returns_429_when_rate_limit_exceeded(
     client: AsyncClient,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     service = FakeRateLimitService(denied_scope=MODEL_PREDICT_LIMIT.scope)
     app.dependency_overrides[get_rate_limit_service] = lambda: service
@@ -111,7 +111,7 @@ async def test_predict_returns_429_when_rate_limit_exceeded(
     try:
         response = await client.post(
             "/api/v1/model/predict",
-            headers={"Authorization": f"Bearer {token}"},
+            headers=user.headers,
             json={"block_id": "blk_1", "log_lines": ["line 1"]},
         )
     finally:

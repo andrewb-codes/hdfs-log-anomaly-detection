@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 
 from hdfs_anomaly.app.schemas.model import PredictRequest, PredictResponse
-from tests.helpers import make_admin, register_and_login
+from tests.helpers import make_admin, register_user
 
 
 @pytest.fixture
@@ -42,11 +42,11 @@ async def test_model_info_without_token_returns_401(client: AsyncClient) -> None
 
 
 async def test_user_cannot_get_model_info(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.get(
         "/api/v1/model/info",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     assert response.status_code == 403
@@ -54,12 +54,12 @@ async def test_user_cannot_get_model_info(client: AsyncClient) -> None:
 
 
 async def test_admin_can_get_model_info(client: AsyncClient) -> None:
-    admin_token = await register_and_login(client, email="admin@mail.com")
+    admin_user = await register_user(client, email="admin@mail.com")
     await make_admin(profile_id=1)
 
     response = await client.get(
         "/api/v1/model/info",
-        headers={"Authorization": f"Bearer {admin_token}"},
+        headers=admin_user.headers,
     )
 
     assert response.status_code == 200
@@ -77,11 +77,11 @@ async def test_predict_returns_response_and_writes_history(
     client: AsyncClient,
     stub_successful_inference: None,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.post(
         "/api/v1/model/predict",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "block_id": "blk_1",
             "log_lines": ["line 1", "line 2"],
@@ -91,7 +91,7 @@ async def test_predict_returns_response_and_writes_history(
     )
     history_response = await client.get(
         "/api/v1/history",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     assert response.status_code == 200
@@ -117,11 +117,11 @@ async def test_predict_returns_response_and_writes_history(
 
 
 async def test_predict_invalid_payload_returns_422(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.post(
         "/api/v1/model/predict",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={"block_id": "", "log_lines": []},
     )
 
@@ -132,16 +132,16 @@ async def test_predict_inference_failure_returns_422_and_writes_failed_history(
     client: AsyncClient,
     stub_failed_inference: None,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.post(
         "/api/v1/model/predict",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={"block_id": "blk_1", "log_lines": ["line 1"]},
     )
     history_response = await client.get(
         "/api/v1/history",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     history_body = history_response.json()

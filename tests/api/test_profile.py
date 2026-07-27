@@ -1,7 +1,7 @@
 from httpx import AsyncClient
 
 from hdfs_anomaly.app.core.security import create_access_token
-from tests.helpers import register_and_login
+from tests.helpers import register_user
 
 PROFILE_RESPONSE_FIELDS = {
     "id",
@@ -20,12 +20,15 @@ async def test_get_profile_without_token_returns_401(client: AsyncClient) -> Non
     assert response.json() == {"detail": "error.auth.unauthorized"}
 
 
-async def test_get_profile_with_inactive_token_returns_401(client: AsyncClient) -> None:
-    await client.post(
+async def test_get_profile_with_token_for_inactive_profile_returns_401(
+    client: AsyncClient,
+) -> None:
+    registration_response = await client.post(
         "/api/v1/registration",
         json={"email": "user@mail.com", "password": "123456"},
     )
-    token = create_access_token(profile_id=1, role="USER")
+    profile_id = int(registration_response.json()["id"])
+    token = create_access_token(profile_id=profile_id, role="USER")
 
     response = await client.get(
         "/api/v1/profile",
@@ -37,11 +40,11 @@ async def test_get_profile_with_inactive_token_returns_401(client: AsyncClient) 
 
 
 async def test_get_profile_returns_current_active_profile(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.get(
         "/api/v1/profile",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     body = response.json()
@@ -57,11 +60,11 @@ async def test_get_profile_returns_current_active_profile(client: AsyncClient) -
 
 
 async def test_change_email_updates_email(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.patch(
         "/api/v1/profile/email",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "new_email": "new@mail.com",
             "current_password": "123456",
@@ -80,11 +83,11 @@ async def test_change_email_updates_email(client: AsyncClient) -> None:
 async def test_change_email_with_wrong_password_returns_400(
     client: AsyncClient,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.patch(
         "/api/v1/profile/email",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "new_email": "new@mail.com",
             "current_password": "wrong-password",
@@ -97,11 +100,11 @@ async def test_change_email_with_wrong_password_returns_400(
 
 
 async def test_change_email_to_same_email_returns_400(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.patch(
         "/api/v1/profile/email",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "new_email": "user@mail.com",
             "current_password": "123456",
@@ -114,12 +117,12 @@ async def test_change_email_to_same_email_returns_400(client: AsyncClient) -> No
 
 
 async def test_change_email_to_existing_email_returns_409(client: AsyncClient) -> None:
-    token = await register_and_login(client)
-    await register_and_login(client, email="existing@mail.com")
+    user = await register_user(client)
+    await register_user(client, email="existing@mail.com")
 
     response = await client.patch(
         "/api/v1/profile/email",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "new_email": "existing@mail.com",
             "current_password": "123456",
@@ -132,11 +135,11 @@ async def test_change_email_to_existing_email_returns_409(client: AsyncClient) -
 
 
 async def test_change_email_with_wrong_version_returns_409(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.patch(
         "/api/v1/profile/email",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "new_email": "new@mail.com",
             "current_password": "123456",
@@ -149,11 +152,11 @@ async def test_change_email_with_wrong_version_returns_409(client: AsyncClient) 
 
 
 async def test_change_password_updates_password(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.patch(
         "/api/v1/profile/password",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "current_password": "123456",
             "new_password": "new-password",
@@ -185,11 +188,11 @@ async def test_change_password_updates_password(client: AsyncClient) -> None:
 async def test_change_password_with_wrong_current_password_returns_400(
     client: AsyncClient,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.patch(
         "/api/v1/profile/password",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "current_password": "wrong-password",
             "new_password": "new-password",
@@ -204,11 +207,11 @@ async def test_change_password_with_wrong_current_password_returns_400(
 async def test_change_password_to_same_password_returns_400(
     client: AsyncClient,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.patch(
         "/api/v1/profile/password",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "current_password": "123456",
             "new_password": "123456",
@@ -223,11 +226,11 @@ async def test_change_password_to_same_password_returns_400(
 async def test_change_password_with_wrong_version_returns_409(
     client: AsyncClient,
 ) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     response = await client.patch(
         "/api/v1/profile/password",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
         json={
             "current_password": "123456",
             "new_password": "new-password",
@@ -240,15 +243,15 @@ async def test_change_password_with_wrong_version_returns_409(
 
 
 async def test_delete_profile_returns_204_and_invalidates_token(client: AsyncClient) -> None:
-    token = await register_and_login(client)
+    user = await register_user(client)
 
     delete_response = await client.delete(
         "/api/v1/profile",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
     profile_response = await client.get(
         "/api/v1/profile",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=user.headers,
     )
 
     assert delete_response.status_code == 204

@@ -13,6 +13,8 @@ from hdfs_anomaly.app.middleware.request_logging import (
     request_logging_middleware,
 )
 
+pytestmark = pytest.mark.no_db
+
 
 def _request_completed_records(caplog: pytest.LogCaptureFixture) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
@@ -36,7 +38,6 @@ def _request_failed_records(caplog: pytest.LogCaptureFixture) -> list[dict[str, 
     return records
 
 
-@pytest.mark.no_db
 async def test_successful_request_is_logged_and_returns_request_id(
     client: AsyncClient,
     caplog: pytest.LogCaptureFixture,
@@ -53,7 +54,6 @@ async def test_successful_request_is_logged_and_returns_request_id(
     assert request_record["status_code"] == 200
 
 
-@pytest.mark.no_db
 async def test_valid_request_id_header_is_used(
     client: AsyncClient,
     caplog: pytest.LogCaptureFixture,
@@ -66,7 +66,6 @@ async def test_valid_request_id_header_is_used(
     assert request_record["request_id"] == "client-request_123"
 
 
-@pytest.mark.no_db
 async def test_invalid_request_id_header_is_replaced(
     client: AsyncClient,
     caplog: pytest.LogCaptureFixture,
@@ -84,7 +83,6 @@ async def test_invalid_request_id_header_is_replaced(
     assert invalid_request_id not in str(request_record)
 
 
-@pytest.mark.no_db
 async def test_404_request_is_logged_with_status(
     client: AsyncClient,
     caplog: pytest.LogCaptureFixture,
@@ -97,7 +95,6 @@ async def test_404_request_is_logged_with_status(
     assert request_record["status_code"] == 404
 
 
-@pytest.mark.no_db
 async def test_422_request_is_logged_without_body_leak(
     client: AsyncClient,
     caplog: pytest.LogCaptureFixture,
@@ -117,7 +114,6 @@ async def test_422_request_is_logged_without_body_leak(
     assert "not-an-email" not in str(request_record)
 
 
-@pytest.mark.no_db
 async def test_unhandled_exception_is_logged_with_traceback(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
@@ -145,7 +141,6 @@ async def test_unhandled_exception_is_logged_with_traceback(
     assert "RuntimeError: boom" in str(failed_record["exception"])
 
 
-@pytest.mark.no_db
 async def test_sensitive_headers_are_not_logged(
     client: AsyncClient,
     caplog: pytest.LogCaptureFixture,
@@ -169,7 +164,6 @@ async def test_sensitive_headers_are_not_logged(
     assert "Cookie" not in request_record
 
 
-@pytest.mark.no_db
 async def test_request_context_does_not_leak_between_requests(
     client: AsyncClient,
     caplog: pytest.LogCaptureFixture,
@@ -184,7 +178,6 @@ async def test_request_context_does_not_leak_between_requests(
     assert "request-one" not in str(second_record)
 
 
-@pytest.mark.no_db
 async def test_json_request_log_is_valid_json(
     client: AsyncClient,
     capfd: pytest.CaptureFixture[str],

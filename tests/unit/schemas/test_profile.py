@@ -4,12 +4,49 @@ from pydantic import ValidationError
 from hdfs_anomaly.app.models.profile import Role, Status
 from hdfs_anomaly.app.schemas.profile import (
     AdminProfileRoleUpdateRequest,
+    AdminProfilesPageResponse,
     AdminProfileStatusUpdateRequest,
     EmailChangeRequest,
     PasswordChangeRequest,
+    ProfileResponse,
 )
 
 pytestmark = pytest.mark.no_db
+
+
+def test_profile_response_accepts_profile_payload() -> None:
+    response = ProfileResponse.model_validate(
+        {
+            "id": 1,
+            "email": "user@mail.com",
+            "status": "ACTIVE",
+            "role": "USER",
+            "version": 0,
+            "created_at": "2026-07-27T12:00:00",
+        }
+    )
+
+    assert response.id == 1
+    assert response.status == Status.ACTIVE
+    assert response.role == Role.USER
+
+
+def test_admin_profiles_page_response_accepts_items_and_has_next() -> None:
+    profile = ProfileResponse.model_validate(
+        {
+            "id": 1,
+            "email": "user@mail.com",
+            "status": "ACTIVE",
+            "role": "USER",
+            "version": 0,
+            "created_at": "2026-07-27T12:00:00",
+        }
+    )
+
+    response = AdminProfilesPageResponse(items=[profile], has_next=False)
+
+    assert response.items == [profile]
+    assert response.has_next is False
 
 
 def test_email_change_accepts_valid_payload() -> None:
