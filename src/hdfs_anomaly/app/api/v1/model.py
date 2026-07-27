@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 
 from hdfs_anomaly.app.api.deps import (
@@ -21,7 +23,9 @@ router = APIRouter(prefix="/api/v1/model", tags=["Model"])
     response_model=ModelInfoResponse,
     dependencies=[Depends(require_admin), Depends(rate_limit_user(MODEL_INFO_LIMIT))],
 )
-def model_info(resources: InferenceResources = Depends(get_resources)) -> ModelInfoResponse:
+def model_info(
+    resources: Annotated[InferenceResources, Depends(get_resources)],
+) -> ModelInfoResponse:
     """Return metadata for the currently loaded inference model."""
     return ModelInfoResponse(
         model_type="many_to_many_lstm",
@@ -36,9 +40,9 @@ def model_info(resources: InferenceResources = Depends(get_resources)) -> ModelI
 @router.post("/predict", response_model=PredictResponse)
 async def predict(
     request: PredictRequest,
-    profile: Profile = Depends(get_current_profile),
-    _: None = Depends(rate_limit_user(MODEL_PREDICT_LIMIT)),
-    service: ModelService = Depends(get_model_service),
+    profile: Annotated[Profile, Depends(get_current_profile)],
+    _: Annotated[None, Depends(rate_limit_user(MODEL_PREDICT_LIMIT))],
+    service: Annotated[ModelService, Depends(get_model_service)],
 ) -> PredictResponse:
     """Run anomaly inference for raw HDFS log lines and store request history."""
     return await service.predict(request=request, profile_id=profile.id)

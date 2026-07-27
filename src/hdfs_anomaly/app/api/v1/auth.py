@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Response
 
 from hdfs_anomaly.app.api.deps import get_profile_service
@@ -22,8 +24,8 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 async def login(
     request: LoginRequest,
     response: Response,
-    rate_limit_service: RateLimitService = Depends(get_rate_limit_service),
-    service: ProfileService = Depends(get_profile_service),
+    rate_limit_service: Annotated[RateLimitService, Depends(get_rate_limit_service)],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ) -> TokenResponse:
     await apply_rate_limit(
         rule=LOGIN_GLOBAL_LIMIT,

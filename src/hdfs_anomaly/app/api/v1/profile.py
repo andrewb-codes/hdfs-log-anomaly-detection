@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, status
 
 from hdfs_anomaly.app.api.deps import get_current_profile, get_profile_service
@@ -17,8 +19,8 @@ router = APIRouter(prefix="/api/v1/profile", tags=["Profile"])
 
 @router.get("", response_model=ProfileResponse)
 async def get_profile(
-    profile: Profile = Depends(get_current_profile),
-    _: None = Depends(rate_limit_user(PROFILE_READ_LIMIT)),
+    profile: Annotated[Profile, Depends(get_current_profile)],
+    _: Annotated[None, Depends(rate_limit_user(PROFILE_READ_LIMIT))],
 ) -> ProfileResponse:
     return build_profile_response(profile)
 
@@ -26,9 +28,9 @@ async def get_profile(
 @router.patch("/email", response_model=ProfileResponse)
 async def change_email(
     request: EmailChangeRequest,
-    profile: Profile = Depends(get_current_profile),
-    _: None = Depends(rate_limit_user(PROFILE_WRITE_LIMIT)),
-    service: ProfileService = Depends(get_profile_service),
+    profile: Annotated[Profile, Depends(get_current_profile)],
+    _: Annotated[None, Depends(rate_limit_user(PROFILE_WRITE_LIMIT))],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ) -> ProfileResponse:
     updated_profile = await service.change_email(profile=profile, request=request)
     return build_profile_response(updated_profile)
@@ -37,9 +39,9 @@ async def change_email(
 @router.patch("/password", response_model=ProfileResponse)
 async def change_password(
     request: PasswordChangeRequest,
-    profile: Profile = Depends(get_current_profile),
-    _: None = Depends(rate_limit_user(PROFILE_WRITE_LIMIT)),
-    service: ProfileService = Depends(get_profile_service),
+    profile: Annotated[Profile, Depends(get_current_profile)],
+    _: Annotated[None, Depends(rate_limit_user(PROFILE_WRITE_LIMIT))],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ) -> ProfileResponse:
     updated_profile = await service.change_password(profile=profile, request=request)
     return build_profile_response(updated_profile)
@@ -47,8 +49,8 @@ async def change_password(
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile(
-    profile: Profile = Depends(get_current_profile),
-    _: None = Depends(rate_limit_user(PROFILE_WRITE_LIMIT)),
-    service: ProfileService = Depends(get_profile_service),
+    profile: Annotated[Profile, Depends(get_current_profile)],
+    _: Annotated[None, Depends(rate_limit_user(PROFILE_WRITE_LIMIT))],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ) -> None:
     await service.delete_profile(profile=profile)

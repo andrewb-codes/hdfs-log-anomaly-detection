@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 
 from hdfs_anomaly.app.api.deps import get_profile_service, require_admin
@@ -18,14 +20,14 @@ router = APIRouter(prefix="/api/v1/admin/profiles", tags=["Admin Profiles"])
 
 @router.get("", response_model=AdminProfilesPageResponse)
 async def search_profiles(
+    _: Annotated[Profile, Depends(require_admin)],
+    __: Annotated[None, Depends(rate_limit_user(ADMIN_READ_LIMIT))],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
     email_starts_with: str | None = None,
     role: Role | None = None,
     status: Status | None = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    _: Profile = Depends(require_admin),
-    __: None = Depends(rate_limit_user(ADMIN_READ_LIMIT)),
-    service: ProfileService = Depends(get_profile_service),
 ) -> AdminProfilesPageResponse:
     items, has_next = await service.search_profiles(
         email_starts_with=email_starts_with,
@@ -44,9 +46,9 @@ async def search_profiles(
 async def change_profile_status(
     profile_id: int,
     request: AdminProfileStatusUpdateRequest,
-    admin_profile: Profile = Depends(require_admin),
-    _: None = Depends(rate_limit_user(ADMIN_WRITE_LIMIT)),
-    service: ProfileService = Depends(get_profile_service),
+    admin_profile: Annotated[Profile, Depends(require_admin)],
+    _: Annotated[None, Depends(rate_limit_user(ADMIN_WRITE_LIMIT))],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ) -> ProfileResponse:
     profile = await service.change_profile_status(
         admin_profile=admin_profile,
@@ -61,9 +63,9 @@ async def change_profile_status(
 async def change_profile_role(
     profile_id: int,
     request: AdminProfileRoleUpdateRequest,
-    admin_profile: Profile = Depends(require_admin),
-    _: None = Depends(rate_limit_user(ADMIN_WRITE_LIMIT)),
-    service: ProfileService = Depends(get_profile_service),
+    admin_profile: Annotated[Profile, Depends(require_admin)],
+    _: Annotated[None, Depends(rate_limit_user(ADMIN_WRITE_LIMIT))],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ) -> ProfileResponse:
     profile = await service.change_profile_role(
         admin_profile=admin_profile,

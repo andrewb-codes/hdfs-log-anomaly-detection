@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Response, status
 
 from hdfs_anomaly.app.api.deps import get_profile_service
@@ -20,8 +22,8 @@ router = APIRouter(prefix="/api/v1/registration", tags=["Registration"])
 async def register(
     request: RegistrationRequest,
     response: Response,
-    rate_limit_service: RateLimitService = Depends(get_rate_limit_service),
-    service: ProfileService = Depends(get_profile_service),
+    rate_limit_service: Annotated[RateLimitService, Depends(get_rate_limit_service)],
+    service: Annotated[ProfileService, Depends(get_profile_service)],
 ) -> RegistrationResponse:
     await apply_rate_limit(
         rule=REGISTER_GLOBAL_LIMIT,

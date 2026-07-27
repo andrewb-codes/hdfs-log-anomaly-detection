@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 
 from hdfs_anomaly.app.api.deps import get_current_profile, get_history_service, require_admin
@@ -18,11 +20,11 @@ router = APIRouter(prefix="/api/v1/history", tags=["History"])
 
 @router.get("", response_model=HistoryListResponse)
 async def list_profile_history(
+    profile: Annotated[Profile, Depends(get_current_profile)],
+    _: Annotated[None, Depends(rate_limit_user(HISTORY_READ_LIMIT))],
+    service: Annotated[HistoryService, Depends(get_history_service)],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    profile: Profile = Depends(get_current_profile),
-    _: None = Depends(rate_limit_user(HISTORY_READ_LIMIT)),
-    service: HistoryService = Depends(get_history_service),
 ) -> HistoryListResponse:
     items, has_next = await service.list_profile_history(
         profile_id=profile.id,
@@ -38,11 +40,11 @@ async def list_profile_history(
 
 @router.get("/all", response_model=HistoryListResponse)
 async def list_all_history(
+    _: Annotated[Profile, Depends(require_admin)],
+    __: Annotated[None, Depends(rate_limit_user(HISTORY_READ_LIMIT))],
+    service: Annotated[HistoryService, Depends(get_history_service)],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    _: Profile = Depends(require_admin),
-    __: None = Depends(rate_limit_user(HISTORY_READ_LIMIT)),
-    service: HistoryService = Depends(get_history_service),
 ) -> HistoryListResponse:
     items, has_next = await service.list_all_history(
         page=page,
@@ -57,9 +59,9 @@ async def list_all_history(
 
 @router.get("/stats", response_model=StatsResponse)
 async def request_profile_stats(
-    profile: Profile = Depends(get_current_profile),
-    _: None = Depends(rate_limit_user(HISTORY_READ_LIMIT)),
-    service: HistoryService = Depends(get_history_service),
+    profile: Annotated[Profile, Depends(get_current_profile)],
+    _: Annotated[None, Depends(rate_limit_user(HISTORY_READ_LIMIT))],
+    service: Annotated[HistoryService, Depends(get_history_service)],
 ) -> StatsResponse:
     rows = await service.request_profile_stats(profile_id=profile.id)
     return calculate_request_stats(rows)
@@ -67,9 +69,9 @@ async def request_profile_stats(
 
 @router.get("/stats/all", response_model=StatsResponse)
 async def request_all_stats(
-    _: Profile = Depends(require_admin),
-    __: None = Depends(rate_limit_user(HISTORY_READ_LIMIT)),
-    service: HistoryService = Depends(get_history_service),
+    _: Annotated[Profile, Depends(require_admin)],
+    __: Annotated[None, Depends(rate_limit_user(HISTORY_READ_LIMIT))],
+    service: Annotated[HistoryService, Depends(get_history_service)],
 ) -> StatsResponse:
     rows = await service.request_all_stats()
     return calculate_request_stats(rows)
@@ -77,9 +79,9 @@ async def request_all_stats(
 
 @router.delete("", response_model=DeleteHistoryResponse)
 async def clear_profile_history(
-    profile: Profile = Depends(get_current_profile),
-    _: None = Depends(rate_limit_user(HISTORY_WRITE_LIMIT)),
-    service: HistoryService = Depends(get_history_service),
+    profile: Annotated[Profile, Depends(get_current_profile)],
+    _: Annotated[None, Depends(rate_limit_user(HISTORY_WRITE_LIMIT))],
+    service: Annotated[HistoryService, Depends(get_history_service)],
 ) -> DeleteHistoryResponse:
     deleted = await service.clear_profile_history(profile_id=profile.id)
     return DeleteHistoryResponse(deleted=deleted)
@@ -87,9 +89,9 @@ async def clear_profile_history(
 
 @router.delete("/all", response_model=DeleteHistoryResponse)
 async def clear_all_history(
-    _: Profile = Depends(require_admin),
-    __: None = Depends(rate_limit_user(HISTORY_WRITE_LIMIT)),
-    service: HistoryService = Depends(get_history_service),
+    _: Annotated[Profile, Depends(require_admin)],
+    __: Annotated[None, Depends(rate_limit_user(HISTORY_WRITE_LIMIT))],
+    service: Annotated[HistoryService, Depends(get_history_service)],
 ) -> DeleteHistoryResponse:
     deleted = await service.clear_all_history()
     return DeleteHistoryResponse(deleted=deleted)

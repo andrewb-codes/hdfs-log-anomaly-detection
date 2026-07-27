@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,24 +25,28 @@ def get_resources() -> InferenceResources:
     return resources
 
 
-def get_profile_service(session: AsyncSession = Depends(get_db_session)) -> ProfileService:
+def get_profile_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ProfileService:
     return ProfileService(session)
 
 
-def get_history_service(session: AsyncSession = Depends(get_db_session)) -> HistoryService:
+def get_history_service(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> HistoryService:
     return HistoryService(session)
 
 
 def get_model_service(
-    history_service: HistoryService = Depends(get_history_service),
-    resources: InferenceResources = Depends(get_resources),
+    history_service: Annotated[HistoryService, Depends(get_history_service)],
+    resources: Annotated[InferenceResources, Depends(get_resources)],
 ) -> ModelService:
     return ModelService(history_service, resources)
 
 
 async def get_current_profile(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-    session: AsyncSession = Depends(get_db_session),
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Profile:
     if credentials is None:
         raise UnauthorizedError()
@@ -60,7 +66,7 @@ async def get_current_profile(
     return profile
 
 
-def require_admin(profile: Profile = Depends(get_current_profile)) -> Profile:
+def require_admin(profile: Annotated[Profile, Depends(get_current_profile)]) -> Profile:
     if profile.role != Role.ADMIN:
         raise ForbiddenError()
 
