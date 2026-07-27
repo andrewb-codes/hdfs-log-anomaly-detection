@@ -46,9 +46,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "created_at", 
-            sa.DateTime(), 
-            server_default=sa.text("now()"), 
+            "created_at",
+            sa.DateTime(),
+            server_default=sa.text("now()"),
             nullable=False,
         ),
         sa.Column("version", sa.Integer(), server_default="0", nullable=False),
