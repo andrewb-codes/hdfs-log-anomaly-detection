@@ -40,9 +40,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column(
-            "role", 
-            role_enum, 
-            server_default="USER", 
+            "role",
+            role_enum,
+            server_default="USER",
             nullable=False,
         ),
         sa.Column(
