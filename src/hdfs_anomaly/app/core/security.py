@@ -32,25 +32,11 @@ def create_access_token(*, profile_id: int, role: str) -> str:
         "exp": expires_at,
     }
 
-    return cast(
-        str,
-        jwt.encode(
-            payload,
-            settings.jwt_secret,
-            algorithm=settings.jwt_algorithm,
-        ),
-    )
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
     try:
-        return cast(
-            dict[str, Any],
-            jwt.decode(
-                token,
-                settings.jwt_secret,
-                algorithms=[settings.jwt_algorithm],
-            ),
-        )
+        return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
     except JWTError as exc:
         raise InvalidTokenError from exc
