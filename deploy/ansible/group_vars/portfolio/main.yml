@@ -23,9 +23,7 @@ app_env:
   JWT_SECRET: "{{ jwt_secret }}"
 
   ENVIRONMENT: production
-  LOG_LEVEL: INFO
   LOG_FORMAT: json
-  SQL_LOG_LEVEL: WARNING
 
   RATE_LIMIT_ENABLED: "true"
   RATE_LIMIT_REDIS_URL: async+redis://redis:6379/0
