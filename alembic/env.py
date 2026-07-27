@@ -7,9 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import hdfs_anomaly.app.models  # noqa: F401
 from hdfs_anomaly.app.db.base import Base
-from hdfs_anomaly.app.models.history import RequestHistory  # noqa: F401
-from hdfs_anomaly.app.models.profile import Profile  # noqa: F401
 
 
 class AlembicSettings(BaseSettings):

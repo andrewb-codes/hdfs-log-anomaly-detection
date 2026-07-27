@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hdfs_anomaly.app.db.base import Base
-from hdfs_anomaly.app.models.profile import Profile
+
+if TYPE_CHECKING:
+    from hdfs_anomaly.app.models.profile import Profile
 
 
 class RequestHistory(Base):
@@ -17,7 +22,6 @@ class RequestHistory(Base):
         nullable=False,
         index=True,
     )
-    profile: Mapped["Profile"] = relationship()
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, server_default=func.now()
@@ -36,3 +40,5 @@ class RequestHistory(Base):
     is_anomaly: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     error_message: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    profile: Mapped[Profile] = relationship(back_populates="request_history")
