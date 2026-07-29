@@ -1,14 +1,27 @@
-from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from hdfs_anomaly.app.model.resources import InferenceResources
 from hdfs_anomaly.app.schemas.model import PredictRequest, PredictResponse
 from hdfs_anomaly.app.services.history import HistoryService
 from hdfs_anomaly.app.services.model import ModelService
 from tests.helpers import add_profile
+
+
+def make_test_resources() -> InferenceResources:
+    # run_inference is monkeypatched in these tests, so model and transformer are never used.
+    return InferenceResources(
+        model=cast(Any, object()),
+        transformer=object(),
+        threshold=0.5,
+        scoring_strategy="nll_max",
+        window_size=8,
+        stride=1,
+        device="cpu",
+    )
 
 
 async def test_model_service_predict_returns_response_and_saves_success_history(
@@ -17,7 +30,7 @@ async def test_model_service_predict_returns_response_and_saves_success_history(
 ) -> None:
     profile = await add_profile(session, email="user@mail.com")
     await session.commit()
-    resources = SimpleNamespace(scoring_strategy="nll_max", threshold=0.5)
+    resources = make_test_resources()
 
     def fake_run_inference(request: PredictRequest, resources: Any) -> PredictResponse:
         return PredictResponse(
@@ -65,7 +78,7 @@ async def test_model_service_predict_saves_failed_history_on_inference_error(
 ) -> None:
     profile = await add_profile(session, email="user@mail.com")
     await session.commit()
-    resources = SimpleNamespace(scoring_strategy="nll_max", threshold=0.5)
+    resources = make_test_resources()
 
     def fake_run_inference(_request: PredictRequest, _resources: Any) -> PredictResponse:
         raise RuntimeError("boom")
