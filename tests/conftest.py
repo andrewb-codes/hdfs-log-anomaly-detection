@@ -1,9 +1,10 @@
-from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 from sqlalchemy import text
 
 from hdfs_anomaly.app.db.session import AsyncSessionLocal
+from hdfs_anomaly.app.model.resources import InferenceResources
 
 
 @pytest.fixture(autouse=True)
@@ -19,8 +20,10 @@ async def clean_db(request: pytest.FixtureRequest) -> None:
 
 
 @pytest.fixture
-def fake_resources() -> SimpleNamespace:
-    return SimpleNamespace(
+def fake_resources() -> InferenceResources:
+    return InferenceResources(
+        model=cast(Any, object()),
+        transformer=object(),
         scoring_strategy="nll_max",
         threshold=0.5,
         window_size=8,

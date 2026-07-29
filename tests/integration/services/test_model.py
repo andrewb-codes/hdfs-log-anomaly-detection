@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import Any
 
 import pytest
 from fastapi import HTTPException
@@ -11,26 +11,13 @@ from hdfs_anomaly.app.services.model import ModelService
 from tests.helpers import add_profile
 
 
-def make_test_resources() -> InferenceResources:
-    # run_inference is monkeypatched in these tests, so model and transformer are never used.
-    return InferenceResources(
-        model=cast(Any, object()),
-        transformer=object(),
-        threshold=0.5,
-        scoring_strategy="nll_max",
-        window_size=8,
-        stride=1,
-        device="cpu",
-    )
-
-
 async def test_model_service_predict_returns_response_and_saves_success_history(
     session: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
+    fake_resources: InferenceResources,
 ) -> None:
     profile = await add_profile(session, email="user@mail.com")
     await session.commit()
-    resources = make_test_resources()
 
     def fake_run_inference(request: PredictRequest, resources: Any) -> PredictResponse:
         return PredictResponse(
@@ -46,7 +33,7 @@ async def test_model_service_predict_returns_response_and_saves_success_history(
 
     monkeypatch.setattr("hdfs_anomaly.app.services.model.run_inference", fake_run_inference)
     history_service = HistoryService(session)
-    service = ModelService(history_service=history_service, resources=resources)
+    service = ModelService(history_service=history_service, resources=fake_resources)
 
     response = await service.predict(
         request=PredictRequest(block_id="blk_1", log_lines=["line 1", "line 2"]),
@@ -75,17 +62,17 @@ async def test_model_service_predict_returns_response_and_saves_success_history(
 async def test_model_service_predict_saves_failed_history_on_inference_error(
     session: AsyncSession,
     monkeypatch: pytest.MonkeyPatch,
+    fake_resources: InferenceResources,
 ) -> None:
     profile = await add_profile(session, email="user@mail.com")
     await session.commit()
-    resources = make_test_resources()
 
     def fake_run_inference(_request: PredictRequest, _resources: Any) -> PredictResponse:
         raise RuntimeError("boom")
 
     monkeypatch.setattr("hdfs_anomaly.app.services.model.run_inference", fake_run_inference)
     history_service = HistoryService(session)
-    service = ModelService(history_service=history_service, resources=resources)
+    service = ModelService(history_service=history_service, resources=fake_resources)
 
     with pytest.raises(HTTPException) as exc_info:
         await service.predict(
