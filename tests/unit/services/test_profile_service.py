@@ -365,7 +365,9 @@ async def test_admin_status_change_rejects_missing_profile() -> None:
 
 async def test_admin_status_change_rejects_version_conflict() -> None:
     admin = make_profile(profile_id=1, role=Role.ADMIN)
-    repository = SimpleNamespace(get_by_id=AsyncMock(return_value=make_profile(profile_id=2, version=2)))
+    repository = SimpleNamespace(
+        get_by_id=AsyncMock(return_value=make_profile(profile_id=2, version=2))
+    )
     service = make_profile_service(repository=repository)
 
     with pytest.raises(ProfileVersionConflictError):
