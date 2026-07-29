@@ -12,7 +12,7 @@ from tests.helpers import app_client
 async def client(
     monkeypatch: pytest.MonkeyPatch,
     fake_resources: InferenceResources,
-) -> AsyncGenerator[AsyncClient, None]:
+) -> AsyncGenerator[AsyncClient]:
     monkeypatch.setattr(api_main, "load_resources", lambda: fake_resources)
 
     async with app_client() as client:
