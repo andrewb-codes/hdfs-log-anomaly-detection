@@ -114,10 +114,12 @@ runtime-файлы в images не включаются.
 | Median sequence length | 19 |
 | Max sequence length | 298 |
 
-## Локальный запуск
+## Локальный запуск через Docker Compose
 
 Checkpoint, Drain transformer и threshold из [configs/api.yaml](configs/api.yaml) должны
 присутствовать в `artifacts/` и `reports/`.
+
+Создайте `.env`:
 
 ```bash
 cp .env.example .env
@@ -126,6 +128,8 @@ cp .env.example .env
 Замените placeholder-значения. Пароль в `DATABASE_URL` должен соответствовать
 `POSTGRES_PASSWORD`. Если он содержит зарезервированные URI-символы, его часть внутри URL
 необходимо percent-encode; значение `POSTGRES_PASSWORD` остаётся исходным.
+`DATABASE_URL` из `.env.example` рассчитан на запуск API и Alembic внутри
+Docker Compose и использует host `postgres`.
 
 Bootstrap admin и demo users управляются группами переменных `BOOTSTRAP_ADMIN_*`, `DEMO_*`.
 В production значения задаются через Ansible Vault или GitHub Secrets.
@@ -165,12 +169,6 @@ Streamlit доступен по адресу `http://127.0.0.1:8501`.
 API и Redis не публикуется на хост и доступен только внутри Compose-сети.
 PostgreSQL привязан к localhost на `POSTGRES_PORT` для локальной разработки.
 
-Остановка:
-
-```bash
-docker compose down
-```
-
 Примеры normal/anomaly logs для Streamlit находятся в `examples/`.
 
 ## API
@@ -202,6 +200,12 @@ Health endpoint и Swagger UI внутри Compose-сети:
 ```text
 http://api:8000/health
 http://api:8000/docs
+```
+
+Ошибки приложения возвращаются в едином формате:
+
+```json
+{"detail": "error.<domain>.<reason>"}
 ```
 
 ## Эксперименты
@@ -303,20 +307,27 @@ uv run alembic revision --autogenerate -m "describe schema change"
 uv run alembic upgrade head
 ```
 
-Автогенерированные миграции нужно проверять вручную перед применением.
+Для запуска Alembic с хоста замените host `postgres` на `localhost` в `DATABASE_URL`
+или используйте отдельный файл окружения через `ENV_FILE`. Автогенерированные
+миграции нужно проверять вручную перед применением.
+
+Применение миграции в Docker Compose:
+
+```bash
+docker compose run --rm api alembic upgrade head
+```
 
 ## Тесты и проверки
 
 Тесты используют отдельную PostgreSQL-базу `anomaly_test` в том же
 PostgreSQL-контейнере. Не указывайте в `.env.test` основную БД `anomaly`:
 фикстуры тестов очищают таблицы перед каждым тестом. Пользователь, пароль и
-порт в `DATABASE_URL` из `.env.test` должны совпадать с `POSTGRES_USER`,
-`POSTGRES_PASSWORD` и `POSTGRES_PORT` в `.env`.
+внешний порт в `DATABASE_URL` из `.env.test` должны соответствовать
+`POSTGRES_USER`, `POSTGRES_PASSWORD` и `POSTGRES_PORT` в `.env`.
 
 В `.env.test` rate limiting выключен через `RATE_LIMIT_ENABLED=false`, чтобы
 обычный test suite не зависел от Redis. Rate-limit wiring тестируется отдельно
 через FastAPI dependency overrides и fake service.
-Для тестов используется `ENVIRONMENT=test` и человекочитаемый `LOG_FORMAT=console`.
 
 ```bash
 cp .env.test.example .env.test

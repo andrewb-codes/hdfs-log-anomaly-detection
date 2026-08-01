@@ -28,6 +28,8 @@ dist/
 .ruff_cache/
 .mypy_cache/
 .pyre/
+.nox/
+.tox/
 .hypothesis/
 .uv-cache/
 .uv/
@@ -40,6 +42,7 @@ test-results/
 
 # Jupyter and IPython state
 .ipynb_checkpoints/
+.jupyter/
 profile_default/
 ipython_config.py
 
@@ -51,6 +54,7 @@ tempCodeRunnerFile.py
 
 # Logs and local runtime storage
 *.log
+logs/
 *.pid
 *.sqlite
 *.sqlite3
@@ -62,6 +66,7 @@ tempCodeRunnerFile.py
 # Local Docker and Streamlit overrides
 docker-compose.override.yml
 .streamlit/secrets.toml
+.streamlit/config.toml
 
 # Project data
 # Keep placeholders/documentation, but never commit LogHub data.
