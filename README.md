@@ -125,36 +125,24 @@ Checkpoint, Drain transformer и threshold из [configs/api.yaml](configs/api.y
 cp .env.example .env
 ```
 
-Замените placeholder-значения. Пароль в `DATABASE_URL` должен соответствовать
-`POSTGRES_PASSWORD`. Если он содержит зарезервированные URI-символы, его часть внутри URL
-необходимо percent-encode; значение `POSTGRES_PASSWORD` остаётся исходным.
-`DATABASE_URL` из `.env.example` рассчитан на запуск API и Alembic внутри
-Docker Compose и использует host `postgres`.
+Замените placeholder-значения.
 
-Bootstrap admin и demo users управляются группами переменных `BOOTSTRAP_ADMIN_*`, `DEMO_*`.
-В production значения задаются через Ansible Vault или GitHub Secrets.
+Для Docker Compose `DATABASE_URL` не задается в `.env` вручную:
+`docker-compose.yml` собирает его из `POSTGRES_DB`, `POSTGRES_USER` и
+`POSTGRES_PASSWORD` и передает в контейнер `api`. Внутри Docker-сети API и
+миграции подключаются к PostgreSQL по адресу `postgres:5432`.
 
-Логирование управляется переменными `ENVIRONMENT`, `LOG_LEVEL`, `LOG_FORMAT`
-и `SQL_LOG_LEVEL`. Для локальной разработки используется `LOG_FORMAT=console`,
-для production — `LOG_FORMAT=json`. Логи API пишутся в stdout процесса контейнера.
-
-Rate limiting управляется переменными `RATE_LIMIT_*`. В Docker Compose он включен
-по умолчанию, использует Redis по внутреннему адресу `async+redis://redis:6379/0`
-и требует отдельный `RATE_LIMIT_KEY_SECRET` для HMAC-хеширования email/login
-идентификаторов.
-
-API, Streamlit frontend и Alembic читают `.env` по умолчанию. Для другого файла окружения
-задайте `ENV_FILE`, например `ENV_FILE=.env.test uv run alembic upgrade head`.
-`STREAMLIT_API_URL` нужен при запуске frontend вне Docker Compose; в Compose frontend
-получает внутренний адрес API `http://api:8000` из `docker-compose.yml`.
+`POSTGRES_PORT` — это внешний порт для подключения к PostgreSQL с хоста.
+Для локального запуска тестов используется отдельный `.env.test`, где
+`DATABASE_URL` указывает на `localhost` и этот внешний порт.
 
 Первый запуск:
 
 ```bash
-docker compose up --build -d postgres redis
-docker compose run --rm api alembic upgrade head
+docker compose up -d postgres redis
+docker compose run --rm --build api alembic upgrade head
 docker compose run --rm api python -m hdfs_anomaly.app.scripts.seed_data
-docker compose up -d api frontend
+docker compose up -d --build api frontend
 docker compose logs -f api
 ```
 
@@ -276,7 +264,19 @@ limited responses добавляются `X-RateLimit-Limit`, `X-RateLimit-Remai
 Установка всех зависимостей:
 
 ```bash
-uv sync --all-extras --all-groups
+uv sync --group dev --extra all
+```
+
+Установка только backend-зависимостей:
+
+```bash
+uv sync --extra api
+```
+
+Установка только frontend-зависимостей:
+
+```bash
+uv sync --extra frontend
 ```
 
 Основные директории:
@@ -300,21 +300,29 @@ tests/                             unit и интеграционные API-те
 deploy/ansible/                    production-деплой
 ```
 
-Создание и применение миграции:
+Создание миграции. В `DATABASE_URL` используйте пользователя, пароль и внешний
+порт PostgreSQL из `.env`:
 
 ```bash
-uv run alembic revision --autogenerate -m "describe schema change"
-uv run alembic upgrade head
+DATABASE_URL=postgresql+asyncpg://anomaly_user:replace-with-db-password@localhost:5432/anomaly \
+  uv run alembic revision --autogenerate -m "describe schema change"
 ```
 
-Для запуска Alembic с хоста замените host `postgres` на `localhost` в `DATABASE_URL`
-или используйте отдельный файл окружения через `ENV_FILE`. Автогенерированные
-миграции нужно проверять вручную перед применением.
-
-Применение миграции в Docker Compose:
+Применение миграций для Docker Compose выполняется внутри контейнера `api`.
+Compose собирает `DATABASE_URL` для контейнера из PostgreSQL-переменных в
+`.env`. Перед применением миграций image `api` пересобирается, потому что
+файлы из `alembic/` копируются в контейнер на этапе сборки. Команда запускает
+одноразовый контейнер для Alembic и не пересоздает уже работающий сервис `api`:
 
 ```bash
-docker compose run --rm api alembic upgrade head
+docker compose run --rm --build api alembic upgrade head
+```
+
+Если `api` уже был запущен, после применения миграций пересоздайте сервисы на
+свежем image:
+
+```bash
+docker compose up -d --build api frontend
 ```
 
 ## Тесты и проверки

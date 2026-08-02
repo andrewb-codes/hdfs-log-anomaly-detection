@@ -43,6 +43,8 @@ services:
     image: "{{ api_image_ref }}"
     env_file:
       - .env
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD_URLENCODED}@postgres:5432/${POSTGRES_DB}"
     volumes:
       - ./artifacts:/app/artifacts
       - ./reports:/app/reports
